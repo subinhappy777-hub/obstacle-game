@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>장애물 피하기</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+    background: #111; color: #eee;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 20px; margin: 8px 0 0; }
+  #hud { display: flex; gap: 18px; font-size: 14px; }
+  #hud b { color: #6cf; }
+  #rules, #controls { font-size: 13px; color: #aaa; text-align: center; max-width: 480px; }
+  #stage {
+    position: relative; width: 480px; height: 360px;
+    background: #1b1b1b; border: 2px solid #333; border-radius: 8px;
+    overflow: hidden; touch-action: none;
+  }
+  #player {
+    position: absolute; width: 32px; height: 32px;
+    background: #4a9eff; border-radius: 4px;
+    bottom: 8px; left: 224px;
+  }
+  .obstacle {
+    position: absolute; width: 28px; height: 28px;
+    background: #ff5252; border-radius: 4px;
+  }
+  #overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    background: rgba(0,0,0,0.72); text-align: center; padding: 16px;
+  }
+  #overlay.hidden { display: none; }
+  #overlay .big { font-size: 22px; font-weight: 700; }
+  #overlay .sub { font-size: 13px; color: #bbb; }
+  button {
+    padding: 10px 18px; font-size: 14px; border: 0; border-radius: 6px;
+    background: #4a9eff; color: #fff; cursor: pointer;
+  }
+  button:disabled { background: #555; cursor: default; }
+  #state { font-size: 13px; color: #8f8; }
+</style>
+</head>
+<body>
+  <h1>장애물 피하기</h1>
+
+  <!-- C03 규칙 -->
+  <div id="rules">규칙: 위에서 떨어지는 빨간 장애물을 피해 30초 동안 생존하세요. 3번 부딪히면 실패입니다.</div>
+  <!-- C04 조작 -->
+  <div id="controls">조작: ← → (또는 A D) 이동 · Space/클릭 시작 · R 다시 시작</div>
+  <!-- C05 상태 -->
+  <div id="hud">
+    <span>상태: <b id="state">대기</b></span>
+    <span>남은 시간: <b id="time">30.0</b>s</span>
+    <span>남은 목숨: <b id="lives">3</b></span>
+  </div>
+
+  <div id="stage">
+    <div id="player"></div>
+    <div id="overlay">
+      <div class="big" id="ovTitle">준비</div>
+      <div class="sub" id="ovSub">Space 또는 아래 버튼으로 시작하세요.</div>
+      <button id="startBtn">시작</button>
+    </div>
+  </div>
+
+  <button id="restartBtn" disabled>다시 시작 (R)</button>
+
+<script>
+(() => {
+  "use strict";
+
+  const STAGE_W = 480, STAGE_H = 360;
+  const PLAYER_W = 32, PLAYER_H = 32;
+  const OB_W = 28, OB_H = 28;
+  const PLAYER_SPEED = 6;          // px per keydown
+  const DURATION = 30;             // 성공까지 생존 시간(초)
+  const SPAWN_MS = 700;            // 장애물 생성 주기
+  const TICK_MS = 50;              // 게임 루프 주기
+  const OB_SPEED = 3.2;            // 장애물 낙하 속도(px per tick)
+  const MAX_HITS = 3;              // 3번 부딪히면 실패
+
+  // DOM
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage");
+  const playerEl = $("player");
+  const overlay = $("overlay");
+  const ovTitle = $("ovTitle");
+  const ovSub = $("ovSub");
+  const startBtn = $("startBtn");
+  const restartBtn = $("restartBtn");
+  const stateEl = $("state");
+  const timeEl = $("time");
+  const livesEl = $("lives");
+
+  // ---- 상태 (단일 객체) ----
+  const initialState = () => ({
+    phase: "ready",       // ready | playing | win | lose
+    timeLeft: DURATION,
+    hits: 0,              // 누적 충돌 횟수
+    playerX: (STAGE_W - PLAYER_W) / 2,
+    obstacles: [],        // {x, y}
+    loopId: null,
+    spawnId: null,
+    lastTs: 0
+  });
+  let state = initialState();
+
+  // ---- 렌더 ----
+  function render() {
+    playerEl.style.left = state.playerX + "px";
+    stateEl.textContent = {
+      ready: "대기", playing: "진행 중", win: "성공", lose: "실패"
+    }[state.phase];
+    timeEl.textContent = state.timeLeft.toFixed(1);
+    livesEl.textContent = Math.max(0, MAX_HITS - state.hits);
+
+    // 장애물 DOM 동기화
+    const existing = stage.querySelectorAll(".obstacle");
+    existing.forEach((el) => el.remove());
+    for (const ob of state.obstacles) {
+      const el = document.createElement("div");
+      el.className = "obstacle";
+      el.style.left = ob.x + "px";
+      el.style.top = ob.y + "px";
+      stage.appendChild(el);
+    }
+
+    // 오버레이/버튼
+    if (state.phase === "ready") {
+      overlay.classList.remove("hidden");
+      ovTitle.textContent = "준비";
+      ovSub.textContent = "Space 또는 시작 버튼을 누르세요.";
+      startBtn.disabled = false;
+      startBtn.textContent = "시작";
+      restartBtn.disabled = true;
+    } else if (state.phase === "playing") {
+      overlay.classList.add("hidden");
+      restartBtn.disabled = true;
+    } else if (state.phase === "win") {
+      overlay.classList.remove("hidden");
+      ovTitle.textContent = "성공!";
+      ovSub.textContent = "30초 생존 성공. 다시 시작은 R 또는 버튼.";
+      startBtn.disabled = true;
+      restartBtn.disabled = false;
+    } else if (state.phase === "lose") {
+      overlay.classList.remove("hidden");
+      ovTitle.textContent = "실패";
+      ovSub.textContent = "장애물에 3번 부딪혔습니다. 다시 시작은 R 또는 버튼.";
+      startBtn.disabled = true;
+      restartBtn.disabled = false;
+    }
+  }
+
+  // ---- 타이머/루프 정리 (C08/C09 핵심) ----
+  function clearTimers() {
+    if (state.loopId) { clearInterval(state.loopId); state.loopId = null; }
+    if (state.spawnId) { clearInterval(state.spawnId); state.spawnId = null; }
+  }
+
+  // ---- 시작 ----
+  function startGame() {
+    if (state.phase !== "ready") return;
+    clearTimers();
+    state.phase = "playing";
+    state.lastTs = performance.now();
+    state.loopId = setInterval(loop, TICK_MS);
+    state.spawnId = setInterval(spawnObstacle, SPAWN_MS);
+    render();
+  }
+
+  // ---- 재시작 (성공/실패 공통) ----
+  function restart() {
+    if (state.phase !== "win" && state.phase !== "lose") return;
+    clearTimers();
+    state = initialState();     // 상태 완전 초기화
+    render();
+  }
+
+  function endGame(result) {
+    clearTimers();
+    state.phase = result;       // "win" | "lose"
+    render();
+    // 20회 기록용 로그 (난이도 조정 근거)
+    console.log(JSON.stringify({
+      result, timeLeft: +state.timeLeft.toFixed(2), hits: state.hits,
+      ts: Date.now()
+    }));
+  }
+
+  // ---- 게임 루프 ----
+  function spawnObstacle() {
+    const x = Math.random() * (STAGE_W - OB_W);
+    state.obstacles.push({ x, y: -OB_H });
+  }
+
+  function loop() {
+    if (state.phase !== "playing") return;
+    const now = performance.now();
+    const dt = (now - state.lastTs) / 1000;
+    state.lastTs = now;
+
+    // 시간 감소
+    state.timeLeft = Math.max(0, state.timeLeft - dt);
+
+    // 장애물 이동
+    for (const ob of state.obstacles) ob.y += OB_SPEED;
+
+    // 화면 밖 제거
+    state.obstacles = state.obstacles.filter((ob) => ob.y < STAGE_H + OB_H);
+
+    // 충돌 판정 (플레이어는 하단 고정)
+    const px = state.playerX, py = STAGE_H - PLAYER_H - 8;
+    const isHit = (ob) =>
+      ob.x < px + PLAYER_W && ob.x + OB_W > px &&
+      ob.y < py + PLAYER_H && ob.y + OB_H > py;
+
+    const hitCount = state.obstacles.filter(isHit).length;
+    if (hitCount > 0) {
+      // 부딪힌 장애물 제거 (같은 장애물로 중복 카운트 방지)
+      state.obstacles = state.obstacles.filter((ob) => !isHit(ob));
+      state.hits += hitCount;
+
+      if (state.hits >= MAX_HITS) {
+        endGame("lose");
+        return;
+      }
+      // 아직 목숨이 남았으면 계속 진행
+    }
+
+    if (state.timeLeft <= 0) {
+      endGame("win");
+      return;
+    }
+    render();
+  }
+
+  // ---- 입력 (한 번만 등록) ----
+  function movePlayer(dir) {
+    if (state.phase !== "playing") return;
+    state.playerX = Math.max(0, Math.min(STAGE_W - PLAYER_W, state.playerX + dir * PLAYER_SPEED));
+    render();                   // 이동 1회 = 상태 변화 1회 (C06)
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === "arrowleft" || k === "a") { e.preventDefault(); movePlayer(-1); }
+    else if (k === "arrowright" || k === "d") { e.preventDefault(); movePlayer(1); }
+    else if (e.code === "Space") {
+      e.preventDefault();
+      if (state.phase === "ready") startGame();
+    } else if (k === "r") {
+      restart();
+    }
+  });
+
+  // 터치/클릭 이동 (모바일 대응)
+  stage.addEventListener("pointerdown", (e) => {
+    if (state.phase === "ready") { startGame(); return; }
+    if (state.phase !== "playing") return;
+    const rect = stage.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    movePlayer(x < state.playerX + PLAYER_W / 2 ? -1 : 1);
+  });
+
+  startBtn.addEventListener("click", startGame);
+  restartBtn.addEventListener("click", restart);
+
+  // 초기 렌더
+  render();
+})();
+</script>
+</body>
+</html>
