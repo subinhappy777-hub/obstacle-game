@@ -294,16 +294,22 @@
   "use strict";
 
   /* ===== 난이도 =====
-     점프력 상향: 한 번 점프로 장애물(20px)을 여유 있게 넘도록 JUMP_V를 크게.
-     최고점 ≈ JUMP_V^2 / (2 * GRAVITY) (60fps 프레임 단위 기준).
-       easy   : 16^2 / (2*0.9)  ≈ 142px (매우 여유)
-       normal : 15^2 / (2*1.0)  ≈ 112px
-       spicy  : 14^2 / (2*1.1)  ≈  89px (그래도 20px 장애물은 충분히 넘음)
+     점프 높이 하향:
+       최고점 ≈ JUMP_V^2 / (2 * GRAVITY)  (60fps 프레임 기준)
+       easy   : 13^2 / (2*1.15) ≈ 73px
+       normal : 12^2 / (2*1.2 ) ≈ 60px
+       spicy  : 11.5^2/(2*1.25) ≈ 53px
+     → 모두 장애물(20px)은 충분히 넘되 과하지 않게.
+
+     착한 맛 대폭 하향:
+       - OB_SPEED 0.12 → 0.07 (매우 느림)
+       - SPAWN_MS 1200 → 1800 (간격 넓음)
+       - ITEM_MS 4000 → 2500 (아이템 자주)
   */
   const DIFFICULTIES = {
-    easy:   { name: "착한 맛", OB_SPEED: 0.12, SPAWN_MS: 1200, JUMP_V: 16, GRAVITY: 0.9,  ITEM_MS: 4000 },
-    normal: { name: "중간 맛", OB_SPEED: 0.20, SPAWN_MS: 900,  JUMP_V: 15, GRAVITY: 1.0,  ITEM_MS: 3500 },
-    spicy:  { name: "붉닭 맛", OB_SPEED: 0.30, SPAWN_MS: 650,  JUMP_V: 14, GRAVITY: 1.1,  ITEM_MS: 3000 }
+    easy:   { name: "착한 맛", OB_SPEED: 0.07, SPAWN_MS: 1800, JUMP_V: 13,   GRAVITY: 1.15, ITEM_MS: 2500 },
+    normal: { name: "중간 맛", OB_SPEED: 0.18, SPAWN_MS: 950,  JUMP_V: 12,   GRAVITY: 1.2,  ITEM_MS: 3500 },
+    spicy:  { name: "붉닭 맛", OB_SPEED: 0.30, SPAWN_MS: 650,  JUMP_V: 11.5, GRAVITY: 1.25, ITEM_MS: 3000 }
   };
 
   const STORAGE_KEY = "dragon-jump-v1";
@@ -321,7 +327,7 @@
   const MAX_HITS = 3;
   const GROUND_H = 40;
   const MAX_EVOLUTION = 3;
-  const ITEMS_PER_EVOLUTION = 1;       // 아이템 1개 = 1단계 진화
+  const ITEMS_PER_EVOLUTION = 1;
   const MAX_JUMPS = 2;
   const SECOND_JUMP_RATIO = 0.85;
 
@@ -511,7 +517,6 @@
     const labels = ["아기 드래곤", "어린 드래곤", "성인 드래곤"];
     evoLabel.textContent = labels[s - 1];
 
-    // 점 표시: 현재 진화 단계만큼 채움 (1단계=1칸, 2단계=2칸, 3단계=3칸)
     evoDots.forEach((d, i) => {
       d.classList.toggle("filled", i < s);
     });
@@ -677,8 +682,8 @@
   }
 
   function spawnItem() {
-    const minY = 50;
-    const maxY = 150;
+    const minY = 45;
+    const maxY = 110;
     const y = minY + Math.random() * (maxY - minY);
     state.items.push({ x: STAGE_W, y });
   }
