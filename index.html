@@ -27,7 +27,6 @@
     overflow: hidden; touch-action: none;
   }
 
-  /* ===== 지면 ===== */
   #ground {
     position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
     background: linear-gradient(#2a2a2a, #1a1a1a);
@@ -35,14 +34,12 @@
     z-index: 1;
   }
 
-  /* ===== 드래곤 (z-index 2) ===== */
   #player {
     position: absolute; width: 40px; height: 40px;
     left: 60px; bottom: 40px;
     z-index: 2;
     will-change: left, bottom, transform;
   }
-  /* 드래곤 공통 */
   .dragon {
     position: relative; width: 100%; height: 100%;
     transition: transform 0.35s ease, filter 0.35s ease;
@@ -62,48 +59,41 @@
   .dragon .horn {
     position: absolute; width: 8px; height: 10px;
     background: #ffd54f; border-radius: 50% 50% 20% 20%;
-    top: -4px; left: 8px;
+    top: -4px; left: 8px; opacity: 0; transition: opacity 0.3s;
   }
   .dragon .horn.right { left: auto; right: 8px; }
   .dragon .wing {
     position: absolute; width: 22px; height: 18px;
     background: linear-gradient(#7ee87e, #3d8b40);
-    border-radius: 50% 50% 50% 50%;
-    opacity: 0;
-    transition: opacity 0.3s;
+    border-radius: 50%;
+    opacity: 0; transition: opacity 0.3s;
   }
   .dragon .wing.left { left: -14px; top: 6px; transform: rotate(-20deg); }
   .dragon .wing.right { right: -14px; top: 6px; transform: rotate(20deg); }
   .dragon .tail {
     position: absolute; width: 14px; height: 8px;
     background: #4caf50; border-radius: 50%;
-    bottom: -4px; left: -8px; opacity: 0;
-    transition: opacity 0.3s;
+    bottom: -4px; left: -8px; opacity: 0; transition: opacity 0.3s;
   }
 
-  /* 1단계: 아기 드래곤 (작고 둥근 몸) */
   #player.stage-1 .dragon { transform: scale(0.85); }
   #player.stage-1 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #d8ffd8, #81c784 70%);
   }
-
-  /* 2단계: 어린 드래곤 (뿔 + 크기 증가) */
   #player.stage-2 .dragon { transform: scale(1.0); }
   #player.stage-2 .dragon .horn { opacity: 1; }
   #player.stage-2 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #a5ffa5, #4caf50 70%);
   }
-
-  /* 3단계: 성인 드래곤 (날개 + 꼬리 + 진한 색) */
   #player.stage-3 .dragon { transform: scale(1.15); }
-  #player.stage-3 .dragon .wing { opacity: 1; }
-  #player.stage-3 .dragon .tail { opacity: 1; }
+  #player.stage-3 .dragon .wing,
+  #player.stage-3 .dragon .tail,
+  #player.stage-3 .dragon .horn { opacity: 1; }
   #player.stage-3 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #7dff7d, #2e7d32 70%);
     border-color: #1b5e20;
   }
 
-  /* 진화 순간 반짝임 */
   @keyframes evolvePulse {
     0% { transform: scale(1); filter: brightness(1); }
     50% { transform: scale(1.3); filter: brightness(2); }
@@ -111,7 +101,6 @@
   }
   #player.evolving .dragon { animation: evolvePulse 0.5s ease; }
 
-  /* 충돌 시 캐릭터 깜빡임 */
   @keyframes blink {
     0%, 100% { opacity: 1; }
     25% { opacity: 0.15; }
@@ -120,7 +109,6 @@
   }
   #player.blink { animation: blink 0.28s ease-in-out 2; }
 
-  /* ===== 장애물 (z-index 1) ===== */
   .obstacle {
     position: absolute; width: 26px; height: 26px;
     background: radial-gradient(circle at 35% 30%, #ff8a80, #c62828 70%);
@@ -129,7 +117,6 @@
     z-index: 1;
   }
 
-  /* ===== 아이템 (z-index 1) ===== */
   .item {
     position: absolute; width: 20px; height: 20px;
     border-radius: 50%;
@@ -143,7 +130,6 @@
     50% { transform: translateY(-4px); }
   }
 
-  /* ===== 오버레이 (z-index 10) ===== */
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 12px;
@@ -162,7 +148,6 @@
 
   #btnRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
-  /* ===== 난이도 버튼 ===== */
   #difficultyBar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-size: 13px; }
   .diffBtn {
     padding: 6px 14px; font-size: 13px; border-radius: 6px;
@@ -171,11 +156,7 @@
   .diffBtn.active { border-color: #6cf; background: #34507a; }
   .diffBtn:disabled { opacity: 0.5; cursor: default; }
 
-  /* ===== 진화 게이지 ===== */
-  #evoBar {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 13px; color: #cfe;
-  }
+  #evoBar { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfe; }
   #evoDots { display: flex; gap: 4px; }
   .evoDot {
     width: 14px; height: 14px; border-radius: 50%;
@@ -184,7 +165,6 @@
   }
   .evoDot.filled { background: #ab47bc; box-shadow: 0 0 8px rgba(171,71,188,0.9); }
 
-  /* ===== 보존 기록 ===== */
   #persistView {
     display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
     justify-content: center; font-size: 13px; color: #cfe;
@@ -194,11 +174,9 @@
   #persistView b { color: #6cf; }
   #persistView button { padding: 4px 10px; font-size: 12px; background: #2a3a55; }
 
-  /* ===== 옵션 ===== */
   #optionBar { font-size: 13px; color: #cfe; }
   #optionBar input { vertical-align: middle; margin-right: 4px; }
 
-  /* ===== 기록 패널 ===== */
   #recordPanel { width: 480px; max-width: 100%; font-size: 12px; margin-top: 4px; }
   #recordHead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
   #recordHead button { padding: 4px 10px; font-size: 12px; }
@@ -207,7 +185,6 @@
   #recordTable th { background: #222; color: #6cf; }
   #summary { margin-top: 6px; color: #8f8; }
 
-  /* ===== 화면 흔들림/플래시 ===== */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-6px); }
@@ -222,7 +199,6 @@
   }
   #stage.flash { animation: flash 0.25s ease-out 1; }
 
-  /* 움직임 감소 → 모든 애니메이션 차단 */
   body.reduce-motion #stage.shake,
   body.reduce-motion #stage.flash,
   body.reduce-motion #player.blink,
@@ -246,7 +222,6 @@
     <span>난이도: <b id="diffView">중간 맛</b></span>
   </div>
 
-  <!-- 진화 게이지 -->
   <div id="evoBar">
     <span>진화: <b id="evoLabel">아기 드래곤</b></span>
     <div id="evoDots">
@@ -254,7 +229,6 @@
     </div>
   </div>
 
-  <!-- 난이도 선택 -->
   <div id="difficultyBar">
     <button class="diffBtn" data-diff="easy">착한 맛</button>
     <button class="diffBtn active" data-diff="normal">중간 맛</button>
@@ -319,14 +293,7 @@
 (() => {
   "use strict";
 
-  /* =========================================================
-     난이도 3단계 (장애물 스폰 y범위 포함)
-     - OB_SPEED: 장애물 x 이동 속도(px/frame)
-     - SPAWN_MS: 장애물 스폰 간격
-     - JUMP_V / GRAVITY: 점프 물리
-     - OB_Y_MIN / OB_Y_MAX: 장애물 지면 위 높이 랜덤 범위(px)
-       → 난이도가 높을수록 더 높이 떠서 점프 타이밍이 까다로움
-     ========================================================= */
+  /* ===== 난이도 ===== */
   const DIFFICULTIES = {
     easy:   { name: "착한 맛", OB_SPEED: 0.12, SPAWN_MS: 1200, JUMP_V: 12, GRAVITY: 0.9,  OB_Y_MIN: 0,  OB_Y_MAX: 30,  ITEM_MS: 4000 },
     normal: { name: "중간 맛", OB_SPEED: 0.20, SPAWN_MS: 900,  JUMP_V: 12, GRAVITY: 1.05, OB_Y_MIN: 0,  OB_Y_MAX: 70,  ITEM_MS: 3500 },
@@ -342,15 +309,14 @@
   const PLAYER_W = 40, PLAYER_H = 40;
   const OB_W = 26, OB_H = 26;
   const ITEM_SIZE = 20;
-  const MOVE_SPEED = 0.28;      // 좌우 목표 이동 속도 (px/frame)
-  const LERP = 0.18;            // 스무스 이동 보간 계수
+  const MOVE_SPEED = 0.28;
+  const LERP = 0.18;
   const DURATION = 30;
   const MAX_HITS = 3;
   const GROUND_H = 40;
-  const MAX_EVOLUTION = 3;      // 총 진화 단계
-  const ITEMS_PER_EVOLUTION = 3; // 단계당 필요한 아이템 수
+  const MAX_EVOLUTION = 3;
+  const ITEMS_PER_EVOLUTION = 3;
 
-  /* ===== DOM ===== */
   const $ = (id) => document.getElementById(id);
   const stage = $("stage");
   const playerEl = $("player");
@@ -374,9 +340,7 @@
   const evoLabel = $("evoLabel");
   const evoDots = document.querySelectorAll(".evoDot");
 
-  /* =========================================================
-     난이도 선택
-     ========================================================= */
+  /* ===== 난이도 선택 ===== */
   let currentDiffKey = "normal";
   const currentDiff = () => DIFFICULTIES[currentDiffKey];
 
@@ -390,9 +354,7 @@
   }
   diffBtns.forEach((b) => b.addEventListener("click", () => setDifficulty(b.dataset.diff)));
 
-  /* =========================================================
-     보존 기록
-     ========================================================= */
+  /* ===== 보존 기록 ===== */
   function loadPersist() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -414,9 +376,7 @@
     totalPlaysEl.textContent = persist.totalPlays;
   }
 
-  /* =========================================================
-     움직임 감소
-     ========================================================= */
+  /* ===== 움직임 감소 ===== */
   let reduceMotion = localStorage.getItem(MOTION_KEY) === "1";
   function applyMotionSetting() {
     document.body.classList.toggle("reduce-motion", reduceMotion);
@@ -448,14 +408,11 @@
     }
   });
 
-  /* =========================================================
-     상태
-     ========================================================= */
+  /* ===== 상태 ===== */
   const initialState = () => ({
     phase: "ready",
     timeLeft: DURATION,
     hits: 0,
-    // 스무스 이동: playerX는 실제 렌더 위치, targetX는 목표 위치
     playerX: (STAGE_W - PLAYER_W) / 2 - 100,
     targetX: (STAGE_W - PLAYER_W) / 2 - 100,
     playerY: 0,
@@ -463,18 +420,17 @@
     onGround: true,
     obstacles: [],
     items: [],
-    evolutionStage: 1,          // 1 ~ 3
-    itemCount: 0,               // 이번 판 획득 아이템 수 (진화 게이지)
+    evolutionStage: 1,
+    itemCount: 0,
     lastFrame: 0,
     loopId: null,
     spawnId: null,
-    itemSpawnId: null
+    itemSpawnId: null,
+    keys: { left: false, right: false }
   });
   let state = initialState();
 
-  /* =========================================================
-     기록
-     ========================================================= */
+  /* ===== 기록 ===== */
   const records = [];
   function recordRun(result, cause) {
     records.push({
@@ -537,20 +493,17 @@
     URL.revokeObjectURL(a.href);
   }
 
-  /* =========================================================
-     진화 렌더
-     ========================================================= */
+  /* ===== 진화 UI ===== */
   function updateEvolutionUI() {
-    const stageNum = state.evolutionStage;
+    const s = state.evolutionStage;
     playerEl.classList.remove("stage-1", "stage-2", "stage-3");
-    playerEl.classList.add(`stage-${stageNum}`);
+    playerEl.classList.add(`stage-${s}`);
 
     const labels = ["아기 드래곤", "어린 드래곤", "성인 드래곤"];
-    evoLabel.textContent = labels[stageNum - 1];
+    evoLabel.textContent = labels[s - 1];
 
-    // 이번 단계에서 획득한 아이템 수 표시
     const inStage = state.itemCount % ITEMS_PER_EVOLUTION;
-    const isMax = stageNum >= MAX_EVOLUTION;
+    const isMax = s >= MAX_EVOLUTION;
     evoDots.forEach((d, i) => {
       d.classList.toggle("filled", isMax || i < inStage);
     });
@@ -561,15 +514,13 @@
     if (state.itemCount % ITEMS_PER_EVOLUTION !== 0) return;
     state.evolutionStage += 1;
     updateEvolutionUI();
-
-    // 진화 애니메이션
-    playerEl.classList.add("evolving");
-    setTimeout(() => playerEl.classList.remove("evolving"), 600);
+    if (!reduceMotion) {
+      playerEl.classList.add("evolving");
+      setTimeout(() => playerEl.classList.remove("evolving"), 600);
+    }
   }
 
-  /* =========================================================
-     렌더
-     ========================================================= */
+  /* ===== 렌더 ===== */
   function render() {
     playerEl.style.left = state.playerX + "px";
     playerEl.style.bottom = (GROUND_H + state.playerY) + "px";
@@ -582,7 +533,6 @@
     livesEl.textContent = Math.max(0, MAX_HITS - state.hits);
     diffView.textContent = currentDiff().name;
 
-    // 장애물
     stage.querySelectorAll(".obstacle").forEach((el) => el.remove());
     for (const ob of state.obstacles) {
       const el = document.createElement("div");
@@ -591,7 +541,6 @@
       el.style.bottom = (GROUND_H + ob.y) + "px";
       stage.appendChild(el);
     }
-    // 아이템
     stage.querySelectorAll(".item").forEach((el) => el.remove());
     for (const it of state.items) {
       const el = document.createElement("div");
@@ -601,11 +550,9 @@
       stage.appendChild(el);
     }
 
-    // 난이도 버튼 잠금
     const locked = state.phase === "playing";
     diffBtns.forEach((b) => (b.disabled = locked));
 
-    // 오버레이
     if (state.phase === "ready") {
       overlay.classList.remove("hidden");
       ovTitle.textContent = "준비";
@@ -647,9 +594,7 @@
     updateEvolutionUI();
   }
 
-  /* =========================================================
-     타이머
-     ========================================================= */
+  /* ===== 타이머 ===== */
   function clearTimers() {
     if (state.loopId) { cancelAnimationFrame(state.loopId); state.loopId = null; }
     if (state.spawnId) { clearInterval(state.spawnId); state.spawnId = null; }
@@ -664,9 +609,214 @@
     state.itemSpawnId = setInterval(spawnItem, currentDiff().ITEM_MS);
   }
 
-  /* =========================================================
-     시작/일시정지/재시작/종료
-     ========================================================= */
+  /* ===== 시작/일시정지/재시작/종료 ===== */
   function startGame() {
     if (state.phase !== "ready") return;
-   
+    state.phase = "playing";
+    state.lastFrame = performance.now();
+    startTimers();
+    render();
+  }
+
+  function togglePause() {
+    if (state.phase === "playing") {
+      clearTimers();
+      state.phase = "paused";
+      render();
+    } else if (state.phase === "paused") {
+      state.phase = "playing";
+      startTimers();
+      render();
+    }
+  }
+
+  function restart() {
+    if (state.phase !== "win" && state.phase !== "lose" && state.phase !== "paused") return;
+    clearTimers();
+    const diff = currentDiffKey;
+    state = initialState();
+    currentDiffKey = diff;
+    render();
+    renderPersist();
+  }
+
+  function endGame(result) {
+    clearTimers();
+    state.phase = result;
+
+    const survived = +(DURATION - state.timeLeft).toFixed(2);
+    persist.totalPlays += 1;
+    if (survived > persist.bestTime) persist.bestTime = survived;
+    savePersist(persist);
+    renderPersist();
+
+    let cause;
+    if (result === "win") cause = "생존";
+    else if (state.timeLeft > 20) cause = "초반 충돌";
+    else if (state.timeLeft > 10) cause = "중반 충돌";
+    else cause = "후반 충돌";
+    recordRun(result, cause);
+
+    render();
+    console.log(JSON.stringify({
+      result, timeLeft: +state.timeLeft.toFixed(2), hits: state.hits,
+      difficulty: currentDiffKey, evolution: state.evolutionStage, ts: Date.now()
+    }));
+  }
+
+  /* ===== 스폰 ===== */
+  function spawnObstacle() {
+    const diff = currentDiff();
+    const y = diff.OB_Y_MIN + Math.random() * (diff.OB_Y_MAX - diff.OB_Y_MIN);
+    state.obstacles.push({ x: STAGE_W, y });
+  }
+
+  function spawnItem() {
+    const diff = currentDiff();
+    // 아이템은 점프로 닿을 수 있는 높이에 랜덤 배치
+    const minY = 40;
+    const maxY = 130;
+    const y = minY + Math.random() * (maxY - minY);
+    state.items.push({ x: STAGE_W, y });
+  }
+
+  /* ===== 게임 루프 (requestAnimationFrame) ===== */
+  function loop(now) {
+    if (state.phase !== "playing") return;
+    const dt = Math.min(32, now - state.lastFrame) / 16.67; // 60fps 정규화
+    state.lastFrame = now;
+
+    const diff = currentDiff();
+
+    // 시간 감소 (실제 초 단위)
+    state.timeLeft = Math.max(0, state.timeLeft - (now - (state.lastFrame - dt * 16.67)) / 1000);
+    // 위 계산이 어색하면 아래로 단순화:
+    state.timeLeft = Math.max(0, state.timeLeft - (1 / 60) * dt);
+
+    // 좌우 스무스 이동 (목표값 갱신)
+    if (state.keys.left)  state.targetX -= MOVE_SPEED * dt * 16.67;
+    if (state.keys.right) state.targetX += MOVE_SPEED * dt * 16.67;
+    state.targetX = Math.max(0, Math.min(STAGE_W - PLAYER_W, state.targetX));
+    state.playerX += (state.targetX - state.playerX) * LERP;
+
+    // 점프 물리
+    if (!state.onGround || state.vy !== 0) {
+      state.vy -= diff.GRAVITY * dt;
+      state.playerY += state.vy * dt;
+      if (state.playerY <= 0) {
+        state.playerY = 0; state.vy = 0; state.onGround = true;
+      }
+    }
+
+    // 장애물 이동
+    for (const ob of state.obstacles) ob.x -= diff.OB_SPEED * dt * 16.67;
+    state.obstacles = state.obstacles.filter((ob) => ob.x + OB_W > 0);
+
+    // 아이템 이동
+    for (const it of state.items) it.x -= diff.OB_SPEED * 0.7 * dt * 16.67;
+    state.items = state.items.filter((it) => it.x + ITEM_SIZE > 0);
+
+    // 충돌 판정 (장애물)
+    const plLeft = state.playerX;
+    const plRight = state.playerX + PLAYER_W;
+    const plBottom = state.playerY;
+    const plTop = state.playerY + PLAYER_H;
+
+    const isHit = (ob) =>
+      plLeft < ob.x + OB_W && plRight > ob.x &&
+      plBottom < ob.y + OB_H && plTop > ob.y;
+
+    const hitCount = state.obstacles.filter(isHit).length;
+    if (hitCount > 0) {
+      state.obstacles = state.obstacles.filter((ob) => !isHit(ob));
+      state.hits += hitCount;
+      playCollisionEffect();
+      if (state.hits >= MAX_HITS) { endGame("lose"); return; }
+    }
+
+    // 아이템 획득 판정
+    const grabbed = state.items.filter((it) =>
+      plLeft < it.x + ITEM_SIZE && plRight > it.x &&
+      plBottom < it.y + ITEM_SIZE && plTop > it.y
+    );
+    if (grabbed.length > 0) {
+      state.items = state.items.filter((it) => !grabbed.includes(it));
+      for (let i = 0; i < grabbed.length; i++) {
+        state.itemCount += 1;
+        tryEvolve();
+      }
+    }
+
+    if (state.timeLeft <= 0) { endGame("win"); return; }
+    render();
+    state.loopId = requestAnimationFrame(loop);
+  }
+
+  /* ===== 입력 ===== */
+  function jump() {
+    if (state.phase !== "playing") return;
+    if (!state.onGround) return;
+    state.vy = currentDiff().JUMP_V;
+    state.onGround = false;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === "arrowleft" || k === "a") {
+      e.preventDefault();
+      state.keys.left = true;
+    } else if (k === "arrowright" || k === "d") {
+      e.preventDefault();
+      state.keys.right = true;
+    } else if (k === "arrowup" || k === "w" || e.code === "Space") {
+      e.preventDefault();
+      if (state.phase === "ready") startGame();
+      else if (state.phase === "playing" && !e.repeat) jump();
+    } else if (k === "p") {
+      e.preventDefault();
+      if (!e.repeat) togglePause();
+    } else if (k === "r") {
+      if (!e.repeat) restart();
+    }
+  });
+
+  document.addEventListener("keyup", (e) => {
+    const k = e.key.toLowerCase();
+    if (k === "arrowleft" || k === "a") state.keys.left = false;
+    else if (k === "arrowright" || k === "d") state.keys.right = false;
+  });
+
+  stage.addEventListener("pointerdown", (e) => {
+    if (state.phase === "ready") { startGame(); return; }
+    if (state.phase !== "playing") return;
+    jump();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && state.phase === "playing") togglePause();
+  });
+  window.addEventListener("blur", () => {
+    if (state.phase === "playing") togglePause();
+  });
+
+  startBtn.addEventListener("click", startGame);
+  pauseBtn.addEventListener("click", togglePause);
+  restartBtn.addEventListener("click", restart);
+  $("csvBtn").addEventListener("click", exportCSV);
+  $("clearBtn").addEventListener("click", clearRecords);
+  $("resetPersistBtn").addEventListener("click", () => {
+    persist = { ...DEFAULT_PERSIST };
+    savePersist(persist);
+    renderPersist();
+  });
+
+  /* ===== 초기 ===== */
+  applyMotionSetting();
+  setDifficulty("normal");
+  render();
+  renderRecords();
+  renderPersist();
+})();
+</script>
+</body>
+</html>
