@@ -109,10 +109,11 @@
   }
   #player.blink { animation: blink 0.28s ease-in-out 2; }
 
+  /* ===== 장애물 (크기 축소: 26 → 20px, 바닥에 붙음) ===== */
   .obstacle {
-    position: absolute; width: 26px; height: 26px;
+    position: absolute; width: 20px; height: 20px;
     background: radial-gradient(circle at 35% 30%, #ff8a80, #c62828 70%);
-    border-radius: 6px;
+    border-radius: 5px;
     border: 2px solid #b71c1c;
     z-index: 1;
   }
@@ -213,7 +214,7 @@
     규칙: 왼쪽에서 다가오는 빨간 장애물을 점프로 피해 30초 생존!<br>
     공중의 보라색 아이템을 먹으면 드래곤이 진화합니다 (3개 = 1단계, 총 3단계). 3번 부딪히면 실패.
   </div>
-  <div id="controls">조작: Space / ↑ / W 점프 · ← → (A D) 이동 · P 일시정지 · R 다시 시작</div>
+  <div id="controls">조작: Space / ↑ / W 점프 (공중에서 한 번 더 = 2단 점프) · ← → (A D) 이동 · P 일시정지 · R 다시 시작</div>
 
   <div id="hud">
     <span>상태: <b id="state">대기</b></span>
@@ -293,11 +294,14 @@
 (() => {
   "use strict";
 
-  /* ===== 난이도 ===== */
+  /* ===== 난이도 =====
+     장애물은 바닥(y=0)에 고정되므로 OB_Y_MIN/MAX 제거.
+     난이도 차이는 속도 / 스폰 간격 / 중력 / 점프력으로 조절.
+  */
   const DIFFICULTIES = {
-    easy:   { name: "착한 맛", OB_SPEED: 0.12, SPAWN_MS: 1200, JUMP_V: 12, GRAVITY: 0.9,  OB_Y_MIN: 0,  OB_Y_MAX: 30,  ITEM_MS: 4000 },
-    normal: { name: "중간 맛", OB_SPEED: 0.20, SPAWN_MS: 900,  JUMP_V: 12, GRAVITY: 1.05, OB_Y_MIN: 0,  OB_Y_MAX: 70,  ITEM_MS: 3500 },
-    spicy:  { name: "붉닭 맛", OB_SPEED: 0.30, SPAWN_MS: 650,  JUMP_V: 13, GRAVITY: 1.2,  OB_Y_MIN: 10, OB_Y_MAX: 110, ITEM_MS: 3000 }
+    easy:   { name: "착한 맛", OB_SPEED: 0.12, SPAWN_MS: 1200, JUMP_V: 12, GRAVITY: 0.9,  ITEM_MS: 4000 },
+    normal: { name: "중간 맛", OB_SPEED: 0.20, SPAWN_MS: 900,  JUMP_V: 12, GRAVITY: 1.05, ITEM_MS: 3500 },
+    spicy:  { name: "붉닭 맛", OB_SPEED: 0.30, SPAWN_MS: 650,  JUMP_V: 13, GRAVITY: 1.2,  ITEM_MS: 3000 }
   };
 
   const STORAGE_KEY = "dragon-jump-v1";
@@ -307,7 +311,7 @@
 
   const STAGE_W = 480, STAGE_H = 360;
   const PLAYER_W = 40, PLAYER_H = 40;
-  const OB_W = 26, OB_H = 26;
+  const OB_W = 20, OB_H = 20;         // 장애물 크기 축소 (26 → 20)
   const ITEM_SIZE = 20;
   const MOVE_SPEED = 0.28;
   const LERP = 0.18;
@@ -316,6 +320,8 @@
   const GROUND_H = 40;
   const MAX_EVOLUTION = 3;
   const ITEMS_PER_EVOLUTION = 3;
+  const MAX_JUMPS = 2;                 // 2단 점프
+  const SECOND_JUMP_RATIO = 0.85;      // 2단 점프는 살짝 약하게
 
   const $ = (id) => document.getElementById(id);
   const stage = $("stage");
@@ -418,6 +424,7 @@
     playerY: 0,
     vy: 0,
     onGround: true,
+    jumpsLeft: MAX_JUMPS,       // 2단 점프용
     obstacles: [],
     items: [],
     evolutionStage: 1,
@@ -538,7 +545,8 @@
       const el = document.createElement("div");
       el.className = "obstacle";
       el.style.left = ob.x + "px";
-      el.style.bottom = (GROUND_H + ob.y) + "px";
+      // 장애물은 항상 바닥에 붙음
+      el.style.bottom = GROUND_H + "px";
       stage.appendChild(el);
     }
     stage.querySelectorAll(".item").forEach((el) => el.remove());
@@ -666,21 +674,19 @@
 
   /* ===== 스폰 ===== */
   function spawnObstacle() {
-    const diff = currentDiff();
-    const y = diff.OB_Y_MIN + Math.random() * (diff.OB_Y_MAX - diff.OB_Y_MIN);
-    state.obstacles.push({ x: STAGE_W, y });
+    // 장애물은 항상 바닥(y=0)에 붙임
+    state.obstacles.push({ x: STAGE_W, y: 0 });
   }
 
   function spawnItem() {
-    const diff = currentDiff();
-    // 아이템은 점프로 닿을 수 있는 높이에 랜덤 배치
-    const minY = 40;
-    const maxY = 130;
+    // 아이템은 점프로 닿을 수 있는 공중 높이에 랜덤 배치
+    const minY = 50;
+    const maxY = 150;
     const y = minY + Math.random() * (maxY - minY);
     state.items.push({ x: STAGE_W, y });
   }
 
-  /* ===== 게임 루프 (requestAnimationFrame) ===== */
+  /* ===== 게임 루프 ===== */
   function loop(now) {
     if (state.phase !== "playing") return;
     const dt = Math.min(32, now - state.lastFrame) / 16.67; // 60fps 정규화
@@ -688,12 +694,10 @@
 
     const diff = currentDiff();
 
-    // 시간 감소 (실제 초 단위)
-    state.timeLeft = Math.max(0, state.timeLeft - (now - (state.lastFrame - dt * 16.67)) / 1000);
-    // 위 계산이 어색하면 아래로 단순화:
+    // 시간 감소
     state.timeLeft = Math.max(0, state.timeLeft - (1 / 60) * dt);
 
-    // 좌우 스무스 이동 (목표값 갱신)
+    // 좌우 스무스 이동
     if (state.keys.left)  state.targetX -= MOVE_SPEED * dt * 16.67;
     if (state.keys.right) state.targetX += MOVE_SPEED * dt * 16.67;
     state.targetX = Math.max(0, Math.min(STAGE_W - PLAYER_W, state.targetX));
@@ -704,7 +708,10 @@
       state.vy -= diff.GRAVITY * dt;
       state.playerY += state.vy * dt;
       if (state.playerY <= 0) {
-        state.playerY = 0; state.vy = 0; state.onGround = true;
+        state.playerY = 0;
+        state.vy = 0;
+        state.onGround = true;
+        state.jumpsLeft = MAX_JUMPS;   // 착지 시 점프 횟수 회복
       }
     }
 
@@ -716,7 +723,7 @@
     for (const it of state.items) it.x -= diff.OB_SPEED * 0.7 * dt * 16.67;
     state.items = state.items.filter((it) => it.x + ITEM_SIZE > 0);
 
-    // 충돌 판정 (장애물)
+    // 충돌 판정 (플레이어: 좌표는 스테이지 좌하단 기준)
     const plLeft = state.playerX;
     const plRight = state.playerX + PLAYER_W;
     const plBottom = state.playerY;
@@ -755,9 +762,18 @@
   /* ===== 입력 ===== */
   function jump() {
     if (state.phase !== "playing") return;
-    if (!state.onGround) return;
-    state.vy = currentDiff().JUMP_V;
+    if (state.jumpsLeft <= 0) return;
+
+    const diff = currentDiff();
+    if (state.jumpsLeft === MAX_JUMPS) {
+      // 1단 점프
+      state.vy = diff.JUMP_V;
+    } else {
+      // 2단 점프 (살짝 약하게)
+      state.vy = diff.JUMP_V * SECOND_JUMP_RATIO;
+    }
     state.onGround = false;
+    state.jumpsLeft -= 1;
   }
 
   document.addEventListener("keydown", (e) => {
