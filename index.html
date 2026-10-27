@@ -76,6 +76,27 @@
     bottom: -4px; left: -8px; opacity: 0; transition: opacity 0.3s;
   }
 
+  /* ★ 성인 드래곤 수염 (귀여운 둥근 수염) */
+  .dragon .beard {
+    position: absolute;
+    left: 50%; bottom: -6px;
+    transform: translateX(-50%) scale(0);
+    width: 26px; height: 12px;
+    opacity: 0;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .dragon .beard::before,
+  .dragon .beard::after {
+    content: "";
+    position: absolute;
+    bottom: 0; width: 14px; height: 12px;
+    background: linear-gradient(#ffffff, #f0f0f0);
+    border: 1.5px solid #c8c8c8;
+    border-radius: 50% 50% 60% 60%;
+  }
+  .dragon .beard::before { left: 0; transform: rotate(-12deg); }
+  .dragon .beard::after  { right: 0; transform: rotate(12deg); }
+
   #player.stage-1 .dragon { transform: scale(0.85); }
   #player.stage-1 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #d8ffd8, #81c784 70%);
@@ -92,6 +113,11 @@
   #player.stage-3 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #7dff7d, #2e7d32 70%);
     border-color: #1b5e20;
+  }
+  /* ★ 성인 드래곤에 수염 표시 */
+  #player.stage-3 .dragon .beard {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
   }
 
   @keyframes evolvePulse {
@@ -248,6 +274,7 @@
         <div class="horn right"></div>
         <div class="eye"></div>
         <div class="eye right"></div>
+        <div class="beard"></div>
       </div>
     </div>
     <div id="overlay">
@@ -297,28 +324,27 @@
   /* =========================================================
      난이도 & 장애물 패턴 설계
 
-     ★ 착한 맛은 장애물 없음
-       GROUP_SIZES: [0] → pickGroupSize가 항상 0을 반환해
-       spawnGroup()이 아무것도 스폰하지 않음.
-       (아이템만 먹으며 진화 연습 가능)
+     ★ 착한 맛 속도 = 중간 맛 속도
+       easy.OB_SPEED = 0.18 (normal과 동일)
+       → 착한 맛은 장애물이 없으므로 실제로는 아이템 이동 속도만 같아짐
 
-     ★ 점프력 추가 상향
-       easy   15.3 (13.8 → +1.5)
-       normal 14.3 (12.8 → +1.5)
-       spicy  13.3 (11.8 → +1.5)
+     ★ 착한 맛은 장애물 없음 (GROUP_SIZES: [0])
+
+     ★ 점프력
+       easy 15.3 / normal 14.3 / spicy 13.3
      ========================================================= */
   const DIFFICULTIES = {
     easy: {
       name: "착한 맛",
-      OB_SPEED: 0.11,
+      OB_SPEED: 0.18,              // ★ 중간 맛과 동일
       GROUP_DELAY_MIN_MS: 1100,
       GROUP_DELAY_MAX_MS: 1700,
-      GROUP_SIZES: [0],            // ★ 장애물 없음
+      GROUP_SIZES: [0],            // 장애물 없음
       GROUP_WEIGHTS: [1],
       IN_GROUP_GAP_MS: 0,
       IN_GROUP_STAGGER_X: 0,
       IN_GROUP_JITTER_X: 0,
-      JUMP_V: 15.3, GRAVITY: 1.55, // ★ 점프력 상향
+      JUMP_V: 15.3, GRAVITY: 1.55,
       ITEM_MS: 2500
     },
     normal: {
@@ -331,7 +357,7 @@
       IN_GROUP_GAP_MS: 180,
       IN_GROUP_STAGGER_X: 36,
       IN_GROUP_JITTER_X: 12,
-      JUMP_V: 14.3, GRAVITY: 1.40, // ★ 점프력 상향
+      JUMP_V: 14.3, GRAVITY: 1.40,
       ITEM_MS: 3500
     },
     spicy: {
@@ -344,7 +370,7 @@
       IN_GROUP_GAP_MS: 140,
       IN_GROUP_STAGGER_X: 28,
       IN_GROUP_JITTER_X: 16,
-      JUMP_V: 13.3, GRAVITY: 1.15, // ★ 점프력 상향
+      JUMP_V: 13.3, GRAVITY: 1.15,
       ITEM_MS: 3000
     }
   };
@@ -737,7 +763,7 @@
   function spawnGroup() {
     const diff = currentDiff();
     const size = pickGroupSize(diff);
-    if (size <= 0) return; // ★ 장애물 없음(착한 맛)
+    if (size <= 0) return;
 
     for (let i = 0; i < size; i++) {
       const jitter = diff.IN_GROUP_JITTER_X > 0
