@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>장애물 피하기</title>
+<title>점프 장애물 피하기</title>
 <style>
   * { box-sizing: border-box; }
   html, body { overflow-x: hidden; }
@@ -17,29 +17,47 @@
   h1 { font-size: 20px; margin: 8px 0 0; }
   #hud { display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap; justify-content: center; }
   #hud b { color: #6cf; }
-  #rules, #controls { font-size: 13px; color: #aaa; text-align: center; max-width: 480px; }
+  #rules, #controls { font-size: 13px; color: #aaa; text-align: center; max-width: 520px; }
   #stage {
     position: relative; width: 480px; height: 360px;
     max-width: 100%;
     background: #1b1b1b; border: 2px solid #333; border-radius: 8px;
     overflow: hidden; touch-action: none;
   }
+
+  /* ===== 지면 ===== */
+  #ground {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 40px;
+    background: linear-gradient(#2a2a2a, #1a1a1a);
+    border-top: 2px solid #3a3a3a;
+    z-index: 1;
+  }
+
+  /* ===== 캐릭터 (z-index 2) ===== */
   #player {
     position: absolute; width: 32px; height: 32px;
     background: #4a9eff; border-radius: 4px;
-    bottom: 8px; left: 224px;
+    left: 60px; bottom: 40px; /* 지면 위 */
+    z-index: 2;
+    transition: none;
   }
+
+  /* ===== 장애물 (z-index 1: 지면과 같은 레벨, 오버레이보다 낮음) ===== */
   .obstacle {
     position: absolute; width: 28px; height: 28px;
     background: #ff5252; border-radius: 4px;
+    z-index: 1;
   }
+
+  /* ===== 오버레이 (z-index 10: 항상 위) ===== */
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 12px;
-    background: rgba(0,0,0,0.72); text-align: center; padding: 16px;
+    background: rgba(0,0,0,0.78); text-align: center; padding: 16px;
+    z-index: 10;
   }
   #overlay.hidden { display: none; }
-  #overlay .big { font-size: 22px; font-weight: 700; }
+  #overlay .big { font-size: 24px; font-weight: 700; }
   #overlay .sub { font-size: 13px; color: #bbb; }
   button {
     padding: 10px 18px; font-size: 14px; border: 0; border-radius: 6px;
@@ -49,7 +67,29 @@
   #state { font-size: 13px; color: #8f8; }
   #btnRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
-  /* ===== 카드4: 보존 기록 표시 ===== */
+  /* ===== 충돌 시 캐릭터 깜빡임 ===== */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    25% { opacity: 0.15; }
+    50% { opacity: 1; }
+    75% { opacity: 0.15; }
+  }
+  #player.blink { animation: blink 0.28s ease-in-out 2; }
+
+  /* ===== 난이도 선택 바 ===== */
+  #difficultyBar {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    font-size: 13px;
+  }
+  .diffBtn {
+    padding: 6px 14px; font-size: 13px; border-radius: 6px;
+    background: #2a3a55; color: #cfe; border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .diffBtn.active { border-color: #6cf; background: #34507a; }
+  .diffBtn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ===== 보존 기록 ===== */
   #persistView {
     display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
     justify-content: center; font-size: 13px; color: #cfe;
@@ -59,11 +99,11 @@
   #persistView b { color: #6cf; }
   #persistView button { padding: 4px 10px; font-size: 12px; background: #2a3a55; }
 
-  /* ===== 카드5: 선택권 ===== */
+  /* ===== 움직임 감소 ===== */
   #optionBar { font-size: 13px; color: #cfe; }
   #optionBar input { vertical-align: middle; margin-right: 4px; }
 
-  /* ===== 카드3: 기록 패널 ===== */
+  /* ===== 기록 패널 ===== */
   #recordPanel { width: 480px; max-width: 100%; font-size: 12px; margin-top: 4px; }
   #recordHead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
   #recordHead button { padding: 4px 10px; font-size: 12px; }
@@ -72,7 +112,7 @@
   #recordTable th { background: #222; color: #6cf; }
   #summary { margin-top: 6px; color: #8f8; }
 
-  /* ===== 카드5: 충돌 효과 애니메이션 ===== */
+  /* ===== 화면 흔들림/플래시 ===== */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-6px); }
@@ -87,31 +127,38 @@
   }
   #stage.flash { animation: flash 0.25s ease-out 1; }
 
-  /* 움직임 감소 켜짐 → 애니메이션 전역 차단 (즉시 멈춤 보장) */
+  /* 움직임 감소 → 애니메이션 전역 차단 */
   body.reduce-motion #stage.shake,
-  body.reduce-motion #stage.flash { animation: none !important; }
+  body.reduce-motion #stage.flash,
+  body.reduce-motion #player.blink { animation: none !important; }
 </style>
 </head>
 <body>
-  <h1>장애물 피하기</h1>
+  <h1>점프 장애물 피하기</h1>
 
-  <!-- C03 규칙 -->
-  <div id="rules">규칙: 위에서 떨어지는 빨간 장애물을 피해 30초 동안 생존하세요. 3번 부딪히면 실패입니다.</div>
-  <!-- C04 조작 -->
-  <div id="controls">조작: ← → (또는 A D) 이동 · Space/클릭 시작 · P 일시정지 · R 다시 시작</div>
-  <!-- C05 상태 -->
+  <div id="rules">규칙: 왼쪽에서 다가오는 빨간 장애물을 점프로 피해 30초 동안 생존하세요. 3번 부딪히면 실패입니다.</div>
+  <div id="controls">조작: Space / ↑ / W 점프 · ← → (A D) 좌우 이동 · P 일시정지 · R 다시 시작</div>
+
   <div id="hud">
     <span>상태: <b id="state">대기</b></span>
     <span>남은 시간: <b id="time">30.0</b>s</span>
     <span>남은 목숨: <b id="lives">3</b></span>
-    <span>난이도(장애물 속도): <b id="diffView">3.2</b></span>
+    <span>난이도: <b id="diffView">중간 맛</b></span>
+  </div>
+
+  <!-- 난이도 선택 -->
+  <div id="difficultyBar">
+    <button class="diffBtn" data-diff="easy">착한 맛</button>
+    <button class="diffBtn active" data-diff="normal">중간 맛</button>
+    <button class="diffBtn" data-diff="spicy">붉닭 맛</button>
   </div>
 
   <div id="stage">
+    <div id="ground"></div>
     <div id="player"></div>
     <div id="overlay">
       <div class="big" id="ovTitle">준비</div>
-      <div class="sub" id="ovSub">Space 또는 아래 버튼으로 시작하세요.</div>
+      <div class="sub" id="ovSub">Space 또는 시작 버튼으로 시작하세요.</div>
       <button id="startBtn">시작</button>
     </div>
   </div>
@@ -121,22 +168,19 @@
     <button id="restartBtn" disabled>다시 시작 (R)</button>
   </div>
 
-  <!-- ===== 카드5: 선택권 ===== -->
   <div id="optionBar">
     <label>
       <input type="checkbox" id="motionToggle" />
-      움직임 감소 (화면 흔들림·플래시 끄기)
+      움직임 감소 (화면 흔들림·플래시·깜빡임 끄기)
     </label>
   </div>
 
-  <!-- ===== 카드4: 보존 기록 ===== -->
   <div id="persistView">
     <span>최고 생존: <b id="bestTime">0.0</b>s</span>
     <span>총 플레이: <b id="totalPlays">0</b>회</span>
     <button id="resetPersistBtn">보존 기록 초기화</button>
   </div>
 
-  <!-- ===== 카드3: 플레이 기록 ===== -->
   <div id="recordPanel">
     <div id="recordHead">
       <span>플레이 기록: <b id="recordCount">0</b> / 10</span>
@@ -157,29 +201,24 @@
   "use strict";
 
   /* =========================================================
-     카드3: 난이도 설정 (이 값 하나만 바꿔서 10회씩 비교)
+     난이도 3단계 정의
+     - OB_SPEED: 장애물 이동 속도(px/tick)
+     - SPAWN_MS: 장애물 스폰 간격
+     - JUMP_V: 점프 초기 속도(px/tick)
+     - GRAVITY: 중력(px/tick^2)
      ========================================================= */
-  const DIFFICULTY = {
-    OB_SPEED: 3.2
+  const DIFFICULTIES = {
+    easy:   { name: "착한 맛", OB_SPEED: 2.2, SPAWN_MS: 1100, JUMP_V: 11, GRAVITY: 0.9 },
+    normal: { name: "중간 맛", OB_SPEED: 3.4, SPAWN_MS: 850,  JUMP_V: 11, GRAVITY: 1.0 },
+    spicy:  { name: "붉닭 맛", OB_SPEED: 5.0, SPAWN_MS: 620,  JUMP_V: 12, GRAVITY: 1.15 }
   };
 
-  /* =========================================================
-     카드4: 저장 정책 선언
-     ========================================================= */
   const RESET_ON_NEW_GAME = ["timeLeft", "hits", "playerX", "obstacles"];
   const PERSIST_KEYS = ["bestTime", "totalPlays"];
-  const STORAGE_KEY = "obstacle-game-v1";
+  const STORAGE_KEY = "obstacle-game-jump-v1";
 
-  const DEFAULT_PERSIST = {
-    bestTime: 0,
-    totalPlays: 0
-  };
+  const DEFAULT_PERSIST = { bestTime: 0, totalPlays: 0 };
 
-  /* =========================================================
-     카드5: 효과 정책 선언
-     - EFFECT_EVENT: 효과를 줄 사건 (충돌에서만)
-     - EFFECT_DURATION: 효과 지속(ms)
-     ========================================================= */
   const EFFECT_EVENT = "collision";
   const EFFECT_DURATION = 250;
   const MOTION_KEY = "obstacle-game-reduce-motion";
@@ -189,9 +228,10 @@
   const OB_W = 28, OB_H = 28;
   const PLAYER_SPEED = 6;
   const DURATION = 30;
-  const SPAWN_MS = 700;
   const TICK_MS = 50;
   const MAX_HITS = 3;
+  const GROUND_H = 40;           // 지면 높이
+  const GROUND_Y = GROUND_H;     // 바닥 기준 y (bottom에서 올라간 높이)
 
   // DOM
   const $ = (id) => document.getElementById(id);
@@ -213,18 +253,36 @@
   const bestTimeEl = $("bestTime");
   const totalPlaysEl = $("totalPlays");
   const motionToggle = $("motionToggle");
+  const diffBtns = document.querySelectorAll(".diffBtn");
 
   /* =========================================================
-     카드4: 저장/불러오기 (빈 값·손상 값 안전 처리)
+     난이도 선택 상태
+     ========================================================= */
+  let currentDiffKey = "normal";
+  function currentDiff() { return DIFFICULTIES[currentDiffKey]; }
+
+  function setDifficulty(key) {
+    if (state.phase === "playing") return; // 진행 중엔 변경 불가
+    currentDiffKey = key;
+    diffBtns.forEach((b) => b.classList.toggle("active", b.dataset.diff === key));
+    // ready/paused/win/lose 상태에서 즉시 반영
+    state.obstacles = [];
+    render();
+  }
+
+  diffBtns.forEach((b) => {
+    b.addEventListener("click", () => setDifficulty(b.dataset.diff));
+  });
+
+  /* =========================================================
+     보존 기록
      ========================================================= */
   function loadPersist() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return { ...DEFAULT_PERSIST };
       const parsed = JSON.parse(raw);
-      if (typeof parsed !== "object" || parsed === null) {
-        return { ...DEFAULT_PERSIST };
-      }
+      if (typeof parsed !== "object" || parsed === null) return { ...DEFAULT_PERSIST };
       return {
         bestTime: Number.isFinite(parsed.bestTime) && parsed.bestTime >= 0
           ? parsed.bestTime : DEFAULT_PERSIST.bestTime,
@@ -236,68 +294,65 @@
       return { ...DEFAULT_PERSIST };
     }
   }
-
   function savePersist(p) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-    } catch (e) {
-      console.warn("저장 실패:", e);
-    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); }
+    catch (e) { console.warn("저장 실패:", e); }
   }
-
   let persist = loadPersist();
-
   function renderPersist() {
     bestTimeEl.textContent = persist.bestTime.toFixed(1);
     totalPlaysEl.textContent = persist.totalPlays;
   }
 
   /* =========================================================
-     카드5: 움직임 감소 설정 (localStorage 보존)
+     움직임 감소 설정
      ========================================================= */
   let reduceMotion = localStorage.getItem(MOTION_KEY) === "1";
-
   function applyMotionSetting() {
     document.body.classList.toggle("reduce-motion", reduceMotion);
     motionToggle.checked = reduceMotion;
   }
 
-  // 효과 실행 (충돌에서만 호출)
+  // 충돌 효과 (흔들림/플래시/깜빡임)
   function playCollisionEffect() {
-    if (reduceMotion) return;                 // C27: 켜져 있으면 실행 안 함
-    if (state.phase !== "playing") return;    // 사건 조건: 진행 중일 때만
+    if (reduceMotion) return;
+    if (state.phase !== "playing") return;
 
     stage.classList.add("shake");
     stage.classList.add("flash");
+    playerEl.classList.add("blink");
 
-    // 효과 종료 (반복 방지)
     clearTimeout(playCollisionEffect._t);
     playCollisionEffect._t = setTimeout(() => {
       stage.classList.remove("shake");
       stage.classList.remove("flash");
-    }, EFFECT_DURATION);
+      playerEl.classList.remove("blink");
+    }, EFFECT_DURATION + 300); // 깜빡임(2회) 고려해 여유
   }
 
   motionToggle.addEventListener("change", () => {
     reduceMotion = motionToggle.checked;
     localStorage.setItem(MOTION_KEY, reduceMotion ? "1" : "0");
     applyMotionSetting();
-    // C27: 켜는 순간 진행 중인 효과도 즉시 제거
     if (reduceMotion) {
       clearTimeout(playCollisionEffect._t);
       stage.classList.remove("shake");
       stage.classList.remove("flash");
+      playerEl.classList.remove("blink");
     }
   });
 
   /* =========================================================
-     현재 판 상태 (저장 안 함 → 새 게임 시 초기화)
+     상태 초기화
      ========================================================= */
   const initialState = () => ({
-    phase: "ready",       // ready | playing | paused | win | lose
+    phase: "ready",
     timeLeft: DURATION,
     hits: 0,
-    playerX: (STAGE_W - PLAYER_W) / 2,
+    playerX: (STAGE_W - PLAYER_W) / 2 - 100,
+    playerY: 0,          // 지면 위로 얼마나 떠있는지(px)
+    vy: 0,               // 수직 속도
+    onGround: true,
     obstacles: [],
     loopId: null,
     spawnId: null,
@@ -306,7 +361,7 @@
   let state = initialState();
 
   /* =========================================================
-     카드3: 플레이 기록 (10회 비교용, 메모리에만 보관)
+     기록
      ========================================================= */
   const records = [];
 
@@ -317,7 +372,7 @@
       timeLeft: +state.timeLeft.toFixed(2),
       hits: state.hits,
       cause,
-      difficulty: DIFFICULTY.OB_SPEED
+      difficulty: currentDiff().name
     });
     renderRecords();
   }
@@ -330,8 +385,7 @@
       ? times[(times.length - 1) / 2]
       : (times[times.length / 2 - 1] + times[times.length / 2]) / 2;
     return {
-      n: records.length,
-      wins,
+      n: records.length, wins,
       winRate: +(wins / records.length * 100).toFixed(1),
       min: +times[0].toFixed(1),
       max: +times[times.length - 1].toFixed(1),
@@ -353,23 +407,16 @@
       recordBody.appendChild(tr);
     });
     recordCount.textContent = records.length;
-
     const s = summarize();
     summaryEl.textContent = s
       ? `요약: ${s.n}회 / 성공 ${s.wins}회 (${s.winRate}%) / 남은시간 범위 ${s.min}~${s.max}s / 중앙값 ${s.median}s`
       : "요약: 기록 없음";
   }
 
-  function clearRecords() {
-    records.length = 0;
-    renderRecords();
-  }
+  function clearRecords() { records.length = 0; renderRecords(); }
 
   function exportCSV() {
-    if (records.length === 0) {
-      alert("기록이 없습니다. 먼저 플레이하세요.");
-      return;
-    }
+    if (records.length === 0) { alert("기록이 없습니다. 먼저 플레이하세요."); return; }
     const header = "run,result,timeLeft,hits,cause,difficulty\n";
     const rows = records.map((r) =>
       [r.run, r.result, r.timeLeft, r.hits, r.cause, r.difficulty].join(",")
@@ -377,7 +424,7 @@
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `plays_${DIFFICULTY.OB_SPEED}.csv`;
+    a.download = `plays_${currentDiffKey}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
@@ -387,28 +434,36 @@
      ========================================================= */
   function render() {
     playerEl.style.left = state.playerX + "px";
+    playerEl.style.bottom = (GROUND_H + state.playerY) + "px";
+
     stateEl.textContent = {
       ready: "대기", playing: "진행 중", paused: "일시정지",
       win: "성공", lose: "실패"
     }[state.phase];
     timeEl.textContent = state.timeLeft.toFixed(1);
     livesEl.textContent = Math.max(0, MAX_HITS - state.hits);
-    diffView.textContent = DIFFICULTY.OB_SPEED;
+    diffView.textContent = currentDiff().name;
 
+    // 장애물 렌더
     const existing = stage.querySelectorAll(".obstacle");
     existing.forEach((el) => el.remove());
     for (const ob of state.obstacles) {
       const el = document.createElement("div");
       el.className = "obstacle";
       el.style.left = ob.x + "px";
-      el.style.top = ob.y + "px";
+      el.style.bottom = GROUND_H + "px"; // 지면 위에 붙음
       stage.appendChild(el);
     }
 
+    // 난이도 버튼 비활성화 여부
+    const locked = state.phase === "playing";
+    diffBtns.forEach((b) => (b.disabled = locked));
+
+    // 오버레이
     if (state.phase === "ready") {
       overlay.classList.remove("hidden");
       ovTitle.textContent = "준비";
-      ovSub.textContent = "Space 또는 시작 버튼을 누르세요.";
+      ovSub.textContent = "난이도를 고르고 Space 또는 시작 버튼을 누르세요.";
       startBtn.disabled = false;
       startBtn.textContent = "시작";
       pauseBtn.disabled = true;
@@ -451,16 +506,15 @@
     if (state.loopId) { clearInterval(state.loopId); state.loopId = null; }
     if (state.spawnId) { clearInterval(state.spawnId); state.spawnId = null; }
   }
-
   function startTimers() {
     clearTimers();
     state.lastTs = performance.now();
     state.loopId = setInterval(loop, TICK_MS);
-    state.spawnId = setInterval(spawnObstacle, SPAWN_MS);
+    state.spawnId = setInterval(spawnObstacle, currentDiff().SPAWN_MS);
   }
 
   /* =========================================================
-     시작 / 일시정지 / 재시작 / 종료
+     시작/일시정지/재시작/종료
      ========================================================= */
   function startGame() {
     if (state.phase !== "ready") return;
@@ -481,7 +535,6 @@
     }
   }
 
-  // C22: 새 게임 → 현재 판 값만 초기화, persist(보존 기록)는 유지
   function restart() {
     if (state.phase !== "win" && state.phase !== "lose" && state.phase !== "paused") return;
     clearTimers();
@@ -494,39 +547,31 @@
     clearTimers();
     state.phase = result;
 
-    // ===== 카드4: 보존 기록 갱신 + 저장 (C23) =====
     const survived = +(DURATION - state.timeLeft).toFixed(2);
     persist.totalPlays += 1;
     if (survived > persist.bestTime) persist.bestTime = survived;
     savePersist(persist);
     renderPersist();
 
-    // ===== 카드3: 실패 원인 구분 + 기록 =====
     let cause;
-    if (result === "win") {
-      cause = "생존";
-    } else if (state.timeLeft > 20) {
-      cause = "초반 충돌";
-    } else if (state.timeLeft > 10) {
-      cause = "중반 충돌";
-    } else {
-      cause = "후반 충돌";
-    }
+    if (result === "win") cause = "생존";
+    else if (state.timeLeft > 20) cause = "초반 충돌";
+    else if (state.timeLeft > 10) cause = "중반 충돌";
+    else cause = "후반 충돌";
     recordRun(result, cause);
 
     render();
     console.log(JSON.stringify({
       result, timeLeft: +state.timeLeft.toFixed(2), hits: state.hits,
-      difficulty: DIFFICULTY.OB_SPEED, ts: Date.now()
+      difficulty: currentDiffKey, ts: Date.now()
     }));
   }
 
   /* =========================================================
-     게임 루프
+     게임 루프: 장애물은 오른쪽 → 왼쪽으로 이동, 점프로 회피
      ========================================================= */
   function spawnObstacle() {
-    const x = Math.random() * (STAGE_W - OB_W);
-    state.obstacles.push({ x, y: -OB_H });
+    state.obstacles.push({ x: STAGE_W, y: 0 });
   }
 
   function loop() {
@@ -536,20 +581,50 @@
     state.lastTs = now;
 
     state.timeLeft = Math.max(0, state.timeLeft - dt);
+    const diff = currentDiff();
 
-    for (const ob of state.obstacles) ob.y += DIFFICULTY.OB_SPEED;
-    state.obstacles = state.obstacles.filter((ob) => ob.y < STAGE_H + OB_H);
+    // 장애물 이동
+    for (const ob of state.obstacles) ob.x -= diff.OB_SPEED;
+    state.obstacles = state.obstacles.filter((ob) => ob.x + OB_W > 0);
 
-    const px = state.playerX, py = STAGE_H - PLAYER_H - 8;
-    const isHit = (ob) =>
-      ob.x < px + PLAYER_W && ob.x + OB_W > px &&
-      ob.y < py + PLAYER_H && ob.y + OB_H > py;
+    // 점프 물리
+    if (!state.onGround || state.vy !== 0) {
+      state.vy -= diff.GRAVITY;
+      state.playerY += state.vy;
+      if (state.playerY <= 0) {
+        state.playerY = 0;
+        state.vy = 0;
+        state.onGround = true;
+      }
+    }
+
+    // 충돌 판정 (플레이어: 지면+playerY에 떠있음)
+    const px = state.playerX;
+    const py = state.playerY; // 지면으로부터의 높이
+    const isHit = (ob) => {
+      // 장애물 x/y는 절대 좌표(스테이지 좌상단 기준)
+      // 장애물 y: 지면 위에 있음 → bottom = GROUND_H
+      const obLeft = ob.x;
+      const obRight = ob.x + OB_W;
+      const obBottom = GROUND_H;       // 지면 위
+      const obTop = GROUND_H + OB_H;
+
+      const plLeft = px;
+      const plRight = px + PLAYER_W;
+      const plBottom = GROUND_H + py;   // 플레이어 bottom 위치
+      const plTop = plBottom + PLAYER_H;
+
+      return (
+        plLeft < obRight && plRight > obLeft &&
+        plBottom < obTop && plTop > obBottom
+      );
+    };
 
     const hitCount = state.obstacles.filter(isHit).length;
     if (hitCount > 0) {
       state.obstacles = state.obstacles.filter((ob) => !isHit(ob));
       state.hits += hitCount;
-      playCollisionEffect();          // ← 카드5: 충돌에서만 1회 실행
+      playCollisionEffect();
       if (state.hits >= MAX_HITS) { endGame("lose"); return; }
     }
 
@@ -566,27 +641,33 @@
     render();
   }
 
+  function jump() {
+    if (state.phase !== "playing") return;
+    if (!state.onGround) return;
+    state.vy = currentDiff().JUMP_V;
+    state.onGround = false;
+  }
+
   document.addEventListener("keydown", (e) => {
-    if (e.repeat) return;               // C12: 키 반복 무시
+    if (e.repeat) return;
     const k = e.key.toLowerCase();
     if (k === "arrowleft" || k === "a") { e.preventDefault(); movePlayer(-1); }
     else if (k === "arrowright" || k === "d") { e.preventDefault(); movePlayer(1); }
-    else if (e.code === "Space") {
+    else if (k === "arrowup" || k === "w" || e.code === "Space") {
       e.preventDefault();
       if (state.phase === "ready") startGame();
-    } else if (k === "p") { e.preventDefault(); togglePause(); }
+      else if (state.phase === "playing") jump();
+    }
+    else if (k === "p") { e.preventDefault(); togglePause(); }
     else if (k === "r") { restart(); }
   });
 
   stage.addEventListener("pointerdown", (e) => {
     if (state.phase === "ready") { startGame(); return; }
     if (state.phase !== "playing") return;
-    const rect = stage.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    movePlayer(x < state.playerX + PLAYER_W / 2 ? -1 : 1);
+    jump(); // 탭/클릭 = 점프
   });
 
-  // C14: 탭 숨김/창 포커스 이탈 시 자동 일시정지
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && state.phase === "playing") togglePause();
   });
@@ -608,6 +689,7 @@
 
   // 초기 렌더
   applyMotionSetting();
+  setDifficulty("normal");
   render();
   renderRecords();
   renderPersist();
