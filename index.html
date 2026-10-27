@@ -34,11 +34,12 @@
     z-index: 1;
   }
 
+  /* 캐릭터는 고정 위치 (좌우 이동 없음) */
   #player {
     position: absolute; width: 40px; height: 40px;
-    left: 60px; bottom: 40px;
+    left: 100px; bottom: 40px;
     z-index: 2;
-    will-change: left, bottom, transform;
+    will-change: bottom, transform;
   }
   .dragon {
     position: relative; width: 100%; height: 100%;
@@ -213,7 +214,7 @@
     규칙: 왼쪽에서 다가오는 빨간 장애물을 점프로 피해 30초 생존!<br>
     공중의 보라색 아이템을 먹으면 드래곤이 즉시 진화합니다 (아이템 1개 = 1단계, 총 3단계). 3번 부딪히면 실패.
   </div>
-  <div id="controls">조작: Space / ↑ / W 점프 (공중에서 한 번 더 = 2단 점프) · ← → (A D) 이동 · P 일시정지 · R 다시 시작</div>
+  <div id="controls">조작: Space / ↑ / W / 클릭 = 점프 (공중에서 한 번 더 = 2단 점프) · P 일시정지 · R 다시 시작</div>
 
   <div id="hud">
     <span>상태: <b id="state">대기</b></span>
@@ -293,23 +294,52 @@
 (() => {
   "use strict";
 
-  /* ===== 난이도 =====
-     점프 높이 하향:
-       최고점 ≈ JUMP_V^2 / (2 * GRAVITY)  (60fps 프레임 기준)
-       easy   : 13^2 / (2*1.15) ≈ 73px
-       normal : 12^2 / (2*1.2 ) ≈ 60px
-       spicy  : 11.5^2/(2*1.25) ≈ 53px
-     → 모두 장애물(20px)은 충분히 넘되 과하지 않게.
+  /* =========================================================
+     난이도 & 장애물 패턴 설계
 
-     착한 맛 대폭 하향:
-       - OB_SPEED 0.12 → 0.07 (매우 느림)
-       - SPAWN_MS 1200 → 1800 (간격 넓음)
-       - ITEM_MS 4000 → 2500 (아이템 자주)
-  */
+     - 캐릭터는 좌우 이동 없이 제자리에서 점프만 함
+     - 장애물은 캐릭터 라인을 반드시 지나가도록 스폰 위치 고정
+     - 난이도별로 "그룹 크기 / 그룹 간 간격"이 달라 속도 이상의 차이를 줌
+
+     ★ 장애물 패턴(그룹) 예시
+       착한 맛 : 항상 1개, 그룹 간격 매우 넓음(1800ms)
+       중간 맛 : 60% 1개 / 40% 2개, 그룹 내 간격 180ms, 그룹 간 1000ms
+       붉닭 맛 : 50% 1개 / 30% 2개 / 20% 3개, 그룹 내 간격 140ms, 그룹 간 750ms
+     ========================================================= */
   const DIFFICULTIES = {
-    easy:   { name: "착한 맛", OB_SPEED: 0.07, SPAWN_MS: 1800, JUMP_V: 13,   GRAVITY: 1.15, ITEM_MS: 2500 },
-    normal: { name: "중간 맛", OB_SPEED: 0.18, SPAWN_MS: 950,  JUMP_V: 12,   GRAVITY: 1.2,  ITEM_MS: 3500 },
-    spicy:  { name: "붉닭 맛", OB_SPEED: 0.30, SPAWN_MS: 650,  JUMP_V: 11.5, GRAVITY: 1.25, ITEM_MS: 3000 }
+    easy: {
+      name: "착한 맛",
+      OB_SPEED: 0.07,
+      GROUP_DELAY_MS: 1800,
+      GROUP_SIZES: [1],
+      GROUP_WEIGHTS: [1],
+      IN_GROUP_GAP_MS: 0,
+      IN_GROUP_STAGGER_X: 0,
+      JUMP_V: 13.5, GRAVITY: 1.55,
+      ITEM_MS: 2500
+    },
+    normal: {
+      name: "중간 맛",
+      OB_SPEED: 0.18,
+      GROUP_DELAY_MS: 1000,
+      GROUP_SIZES: [1, 2],
+      GROUP_WEIGHTS: [0.6, 0.4],
+      IN_GROUP_GAP_MS: 180,
+      IN_GROUP_STAGGER_X: 36,
+      JUMP_V: 12.5, GRAVITY: 1.40,
+      ITEM_MS: 3500
+    },
+    spicy: {
+      name: "붉닭 맛",
+      OB_SPEED: 0.30,
+      GROUP_DELAY_MS: 750,
+      GROUP_SIZES: [1, 2, 3],
+      GROUP_WEIGHTS: [0.5, 0.3, 0.2],
+      IN_GROUP_GAP_MS: 140,
+      IN_GROUP_STAGGER_X: 28,
+      JUMP_V: 11.5, GRAVITY: 1.15,
+      ITEM_MS: 3000
+    }
   };
 
   const STORAGE_KEY = "dragon-jump-v1";
@@ -321,8 +351,6 @@
   const PLAYER_W = 40, PLAYER_H = 40;
   const OB_W = 20, OB_H = 20;
   const ITEM_SIZE = 20;
-  const MOVE_SPEED = 0.28;
-  const LERP = 0.18;
   const DURATION = 30;
   const MAX_HITS = 3;
   const GROUND_H = 40;
@@ -330,6 +358,9 @@
   const ITEMS_PER_EVOLUTION = 1;
   const MAX_JUMPS = 2;
   const SECOND_JUMP_RATIO = 0.85;
+
+  /* 캐릭터 고정 X 위치 (좌우 이동 없음) */
+  const PLAYER_FIXED_X = 100;
 
   const $ = (id) => document.getElementById(id);
   const stage = $("stage");
@@ -427,8 +458,6 @@
     phase: "ready",
     timeLeft: DURATION,
     hits: 0,
-    playerX: (STAGE_W - PLAYER_W) / 2 - 100,
-    targetX: (STAGE_W - PLAYER_W) / 2 - 100,
     playerY: 0,
     vy: 0,
     onGround: true,
@@ -439,9 +468,8 @@
     itemCount: 0,
     lastFrame: 0,
     loopId: null,
-    spawnId: null,
-    itemSpawnId: null,
-    keys: { left: false, right: false }
+    groupTimerId: null,
+    itemSpawnId: null
   });
   let state = initialState();
 
@@ -534,7 +562,8 @@
 
   /* ===== 렌더 ===== */
   function render() {
-    playerEl.style.left = state.playerX + "px";
+    // 캐릭터는 X 고정, Y만 점프로 변경
+    playerEl.style.left = PLAYER_FIXED_X + "px";
     playerEl.style.bottom = (GROUND_H + state.playerY) + "px";
 
     stateEl.textContent = {
@@ -609,7 +638,7 @@
   /* ===== 타이머 ===== */
   function clearTimers() {
     if (state.loopId) { cancelAnimationFrame(state.loopId); state.loopId = null; }
-    if (state.spawnId) { clearInterval(state.spawnId); state.spawnId = null; }
+    if (state.groupTimerId) { clearTimeout(state.groupTimerId); state.groupTimerId = null; }
     if (state.itemSpawnId) { clearInterval(state.itemSpawnId); state.itemSpawnId = null; }
   }
 
@@ -617,7 +646,10 @@
     clearTimers();
     state.lastFrame = performance.now();
     state.loopId = requestAnimationFrame(loop);
-    state.spawnId = setInterval(spawnObstacle, currentDiff().SPAWN_MS);
+
+    // 첫 그룹 스폰을 약간 늦춰 준비 시간 확보
+    state.groupTimerId = setTimeout(scheduleNextGroup, 500);
+
     state.itemSpawnId = setInterval(spawnItem, currentDiff().ITEM_MS);
   }
 
@@ -676,12 +708,47 @@
     }));
   }
 
-  /* ===== 스폰 ===== */
-  function spawnObstacle() {
-    state.obstacles.push({ x: STAGE_W, y: 0 });
+  /* =========================================================
+     장애물 그룹 스폰
+     - 그룹 크기를 난이도별 가중치로 뽑음
+     - 그룹 내부는 IN_GROUP_GAP_MS 간격 + X 오프셋으로 살짝 뭉침
+     - 그룹 간격은 GROUP_DELAY_MS
+     ========================================================= */
+  function scheduleNextGroup() {
+    if (state.phase !== "playing") return;
+    spawnGroup();
+    state.groupTimerId = setTimeout(scheduleNextGroup, currentDiff().GROUP_DELAY_MS);
+  }
+
+  function pickGroupSize(diff) {
+    const r = Math.random();
+    let acc = 0;
+    for (let i = 0; i < diff.GROUP_SIZES.length; i++) {
+      acc += diff.GROUP_WEIGHTS[i];
+      if (r <= acc) return diff.GROUP_SIZES[i];
+    }
+    return diff.GROUP_SIZES[diff.GROUP_SIZES.length - 1];
+  }
+
+  function spawnGroup() {
+    const diff = currentDiff();
+    const size = pickGroupSize(diff);
+
+    // 그룹 내부의 각 장애물은 오른쪽에서 살짝 오프셋을 두고 대기
+    // (같은 라인을 지나가도록 X를 +로 두어 뒤따라오게 함)
+    for (let i = 0; i < size; i++) {
+      setTimeout(() => {
+        if (state.phase !== "playing") return;
+        state.obstacles.push({
+          x: STAGE_W + i * diff.IN_GROUP_STAGGER_X,
+          y: 0
+        });
+      }, i * diff.IN_GROUP_GAP_MS);
+    }
   }
 
   function spawnItem() {
+    // 아이템은 캐릭터 근처 라인에 떠서 지나감
     const minY = 45;
     const maxY = 110;
     const y = minY + Math.random() * (maxY - minY);
@@ -697,11 +764,6 @@
     const diff = currentDiff();
 
     state.timeLeft = Math.max(0, state.timeLeft - (1 / 60) * dt);
-
-    if (state.keys.left)  state.targetX -= MOVE_SPEED * dt * 16.67;
-    if (state.keys.right) state.targetX += MOVE_SPEED * dt * 16.67;
-    state.targetX = Math.max(0, Math.min(STAGE_W - PLAYER_W, state.targetX));
-    state.playerX += (state.targetX - state.playerX) * LERP;
 
     // 점프 물리
     if (!state.onGround || state.vy !== 0) {
@@ -723,9 +785,9 @@
     for (const it of state.items) it.x -= diff.OB_SPEED * 0.7 * dt * 16.67;
     state.items = state.items.filter((it) => it.x + ITEM_SIZE > 0);
 
-    // 충돌 판정
-    const plLeft = state.playerX;
-    const plRight = state.playerX + PLAYER_W;
+    // 충돌 판정 (플레이어 X 고정)
+    const plLeft = PLAYER_FIXED_X;
+    const plRight = PLAYER_FIXED_X + PLAYER_W;
     const plBottom = state.playerY;
     const plTop = state.playerY + PLAYER_H;
 
@@ -776,13 +838,7 @@
 
   document.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
-    if (k === "arrowleft" || k === "a") {
-      e.preventDefault();
-      state.keys.left = true;
-    } else if (k === "arrowright" || k === "d") {
-      e.preventDefault();
-      state.keys.right = true;
-    } else if (k === "arrowup" || k === "w" || e.code === "Space") {
+    if (k === "arrowup" || k === "w" || e.code === "Space") {
       e.preventDefault();
       if (state.phase === "ready") startGame();
       else if (state.phase === "playing" && !e.repeat) jump();
@@ -792,15 +848,10 @@
     } else if (k === "r") {
       if (!e.repeat) restart();
     }
+    // ← → / A D 는 더 이상 사용하지 않음
   });
 
-  document.addEventListener("keyup", (e) => {
-    const k = e.key.toLowerCase();
-    if (k === "arrowleft" || k === "a") state.keys.left = false;
-    else if (k === "arrowright" || k === "d") state.keys.right = false;
-  });
-
-  stage.addEventListener("pointerdown", (e) => {
+  stage.addEventListener("pointerdown", () => {
     if (state.phase === "ready") { startGame(); return; }
     if (state.phase !== "playing") return;
     jump();
