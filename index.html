@@ -39,6 +39,7 @@
     left: 100px; bottom: 40px;
     z-index: 2;
     will-change: bottom, transform;
+    transform-origin: 50% 90%; /* 발밑 기준 회전 → 포물선 느낌 */
   }
   .dragon {
     position: relative; width: 100%; height: 100%;
@@ -75,8 +76,6 @@
     background: #4caf50; border-radius: 50%;
     bottom: -4px; left: -8px; opacity: 0; transition: opacity 0.3s;
   }
-
-  /* ★ 성인 드래곤 수염 (귀여운 둥근 수염) */
   .dragon .beard {
     position: absolute;
     left: 50%; bottom: -6px;
@@ -114,7 +113,6 @@
     background: radial-gradient(circle at 35% 30%, #7dff7d, #2e7d32 70%);
     border-color: #1b5e20;
   }
-  /* ★ 성인 드래곤에 수염 표시 */
   #player.stage-3 .dragon .beard {
     opacity: 1;
     transform: translateX(-50%) scale(1);
@@ -230,6 +228,8 @@
   body.reduce-motion #player.blink,
   body.reduce-motion #player.evolving .dragon,
   body.reduce-motion .item { animation: none !important; }
+  /* 움직임 감소 시 회전도 끔 */
+  body.reduce-motion #player { transform: none !important; }
 </style>
 </head>
 <body>
@@ -292,7 +292,7 @@
   <div id="optionBar">
     <label>
       <input type="checkbox" id="motionToggle" />
-      움직임 감소 (흔들림·플래시·깜빡임 끄기)
+      움직임 감소 (흔들림·플래시·깜빡임·회전 끄기)
     </label>
   </div>
 
@@ -322,47 +322,55 @@
   "use strict";
 
   /* =========================================================
-     난이도 & 장애물 패턴 설계
+     난이도 설계
 
-     ★ 착한 맛 속도 = 중간 맛 속도
-       easy.OB_SPEED = 0.18 (normal과 동일)
-       → 착한 맛은 장애물이 없으므로 실제로는 아이템 이동 속도만 같아짐
+     ★ 붉닭 맛 속도를 전체 기본 속도로
+       BASE_OB_SPEED = 0.30
+       세 난이도 모두 OB_SPEED = BASE_OB_SPEED
 
-     ★ 착한 맛은 장애물 없음 (GROUP_SIZES: [0])
+     ★ 중간 맛은 장애물 2~3개
+       normal.GROUP_SIZES = [2, 3], weights [0.7, 0.3]
 
-     ★ 점프력
-       easy 15.3 / normal 14.3 / spicy 13.3
+     ★ 포물선 점프 (시각적 회전)
+       - 실제 궤적은 중력 물리라 이미 포물선
+       - 캐릭터를 상승 시 뒤로, 하강 시 앞으로 회전시켜
+         "포물선으로 도약하는" 느낌 강화
+       - 착지 시 회전 0으로 복귀
      ========================================================= */
+  const BASE_OB_SPEED = 0.30;
+
   const DIFFICULTIES = {
     easy: {
       name: "착한 맛",
-      OB_SPEED: 0.18,              // ★ 중간 맛과 동일
+      OB_SPEED: BASE_OB_SPEED,       // ★ 붉닭 맛과 동일 (장애물은 없음 → 아이템 이동 속도만 영향)
       GROUP_DELAY_MIN_MS: 1100,
       GROUP_DELAY_MAX_MS: 1700,
-      GROUP_SIZES: [0],            // 장애물 없음
+      GROUP_SIZES: [0],              // 장애물 없음
       GROUP_WEIGHTS: [1],
       IN_GROUP_GAP_MS: 0,
       IN_GROUP_STAGGER_X: 0,
       IN_GROUP_JITTER_X: 0,
       JUMP_V: 15.3, GRAVITY: 1.55,
-      ITEM_MS: 2500
+      ITEM_MS: 2500,
+      TILT_MAX: 22                   // 최대 회전 각도(도)
     },
     normal: {
       name: "중간 맛",
-      OB_SPEED: 0.18,
+      OB_SPEED: BASE_OB_SPEED,       // ★ 동일 속도
       GROUP_DELAY_MIN_MS: 800,
       GROUP_DELAY_MAX_MS: 1300,
-      GROUP_SIZES: [1, 2],
-      GROUP_WEIGHTS: [0.6, 0.4],
+      GROUP_SIZES: [2, 3],           // ★ 2~3개만
+      GROUP_WEIGHTS: [0.7, 0.3],
       IN_GROUP_GAP_MS: 180,
       IN_GROUP_STAGGER_X: 36,
       IN_GROUP_JITTER_X: 12,
       JUMP_V: 14.3, GRAVITY: 1.40,
-      ITEM_MS: 3500
+      ITEM_MS: 3500,
+      TILT_MAX: 24
     },
     spicy: {
       name: "붉닭 맛",
-      OB_SPEED: 0.30,
+      OB_SPEED: BASE_OB_SPEED,       // ★ 기준 속도
       GROUP_DELAY_MIN_MS: 550,
       GROUP_DELAY_MAX_MS: 950,
       GROUP_SIZES: [1, 2, 3],
@@ -371,7 +379,8 @@
       IN_GROUP_STAGGER_X: 28,
       IN_GROUP_JITTER_X: 16,
       JUMP_V: 13.3, GRAVITY: 1.15,
-      ITEM_MS: 3000
+      ITEM_MS: 3000,
+      TILT_MAX: 26
     }
   };
 
@@ -481,6 +490,7 @@
       stage.classList.remove("shake");
       stage.classList.remove("flash");
       playerEl.classList.remove("blink");
+      playerEl.style.transform = "";
     }
   });
 
@@ -493,6 +503,7 @@
     vy: 0,
     onGround: true,
     jumpsLeft: MAX_JUMPS,
+    tilt: 0,               // ★ 현재 회전 각도(도)
     obstacles: [],
     items: [],
     evolutionStage: 1,
@@ -595,6 +606,12 @@
   function render() {
     playerEl.style.left = PLAYER_FIXED_X + "px";
     playerEl.style.bottom = (GROUND_H + state.playerY) + "px";
+    // ★ 포물선 느낌: 상승 시 뒤로, 하강 시 앞으로 회전
+    if (!reduceMotion) {
+      playerEl.style.transform = `rotate(${state.tilt}deg)`;
+    } else {
+      playerEl.style.transform = "";
+    }
 
     stateEl.textContent = {
       ready: "대기", playing: "진행 중", paused: "일시정지",
@@ -738,7 +755,6 @@
 
   /* =========================================================
      장애물 그룹 스폰
-     - pickGroupSize가 0을 반환하면(=착한 맛) 아무것도 스폰 안 함
      ========================================================= */
   function scheduleNextGroup() {
     if (state.phase !== "playing") return;
@@ -763,7 +779,7 @@
   function spawnGroup() {
     const diff = currentDiff();
     const size = pickGroupSize(diff);
-    if (size <= 0) return;
+    if (size <= 0) return; // 착한 맛
 
     for (let i = 0; i < size; i++) {
       const jitter = diff.IN_GROUP_JITTER_X > 0
@@ -795,16 +811,26 @@
 
     state.timeLeft = Math.max(0, state.timeLeft - (1 / 60) * dt);
 
-    // 점프 물리
+    // 점프 물리 + 회전(포물선 느낌)
     if (!state.onGround || state.vy !== 0) {
       state.vy -= diff.GRAVITY * dt;
       state.playerY += state.vy * dt;
+
+      // 상승 중(vy > 0): 뒤로 기울기(-)
+      // 하강 중(vy < 0): 앞으로 숙이기(+)
+      const targetTilt = -Math.sign(state.vy) * diff.TILT_MAX;
+      state.tilt += (targetTilt - state.tilt) * 0.25;
+
       if (state.playerY <= 0) {
         state.playerY = 0;
         state.vy = 0;
         state.onGround = true;
         state.jumpsLeft = MAX_JUMPS;
+        state.tilt = 0;
       }
+    } else {
+      // 지면에선 회전 복귀
+      state.tilt += (0 - state.tilt) * 0.25;
     }
 
     // 장애물 이동
