@@ -1,3 +1,4 @@
+//1028 11:57
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -17,7 +18,6 @@
   h1 { font-size: 20px; margin: 8px 0 0; }
   #hud { display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap; justify-content: center; }
   #hud b { color: #6cf; }
-  #rules, #controls { font-size: 13px; color: #aaa; text-align: center; max-width: 540px; }
 
   #stage {
     position: relative; width: 480px; height: 360px;
@@ -38,9 +38,9 @@
     position: absolute; width: 40px; height: 40px;
     left: 100px; bottom: 40px;
     z-index: 2;
-    will-change: bottom, transform;
-    transform-origin: 50% 90%; /* 발밑 기준 회전 → 포물선 느낌 */
+    will-change: bottom;
   }
+
   .dragon {
     position: relative; width: 100%; height: 100%;
     transition: transform 0.35s ease, filter 0.35s ease;
@@ -96,26 +96,143 @@
   .dragon .beard::before { left: 0; transform: rotate(-12deg); }
   .dragon .beard::after  { right: 0; transform: rotate(12deg); }
 
+  .dragon .fire {
+    position: absolute;
+    left: 55%; bottom: 25%;
+    width: 20px; height: 14px;
+    opacity: 0;
+    z-index: 5;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .dragon .fire::before,
+  .dragon .fire::after {
+    content: "";
+    position: absolute;
+    border-radius: 50% 50% 50% 50%;
+  }
+  .dragon .fire::before {
+    left: 0; top: 2px;
+    width: 16px; height: 10px;
+    background: radial-gradient(circle at 30% 40%, #fff9c4, #ff5722 60%, #b71c1c 100%);
+    filter: blur(1px);
+    animation: flame 0.35s ease-in-out infinite alternate;
+  }
+  .dragon .fire::after {
+    left: 8px; top: 0;
+    width: 14px; height: 14px;
+    background: radial-gradient(circle, #fff59d, #ff9800 70%, transparent 100%);
+    filter: blur(2px);
+    animation: flame 0.28s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes flame {
+    0% { transform: scale(1) translateY(0); opacity: 0.85; }
+    100% { transform: scale(1.25) translateY(-3px); opacity: 1; }
+  }
+
+  .dragon .orb {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 8px; height: 8px;
+    margin-left: -4px; margin-top: -4px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffffff, #ffeb3b 45%, #ff9800 100%);
+    box-shadow: 0 0 10px 3px rgba(255,235,59,0.9), 0 0 20px 6px rgba(255,152,0,0.5);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 6;
+  }
+  .dragon .orb1 { animation: orbit1 2.2s linear infinite; }
+  .dragon .orb2 { animation: orbit2 2.2s linear infinite; }
+  @keyframes orbit1 {
+    0%   { transform: rotate(0deg)   translateX(28px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(28px) rotate(-360deg); }
+  }
+  @keyframes orbit2 {
+    0%   { transform: rotate(180deg) translateX(28px) rotate(-180deg); }
+    100% { transform: rotate(540deg) translateX(28px) rotate(-540deg); }
+  }
+
   #player.stage-1 .dragon { transform: scale(0.85); }
   #player.stage-1 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #d8ffd8, #81c784 70%);
   }
-  #player.stage-2 .dragon { transform: scale(1.0); }
+  #player.stage-2 .dragon { transform: scale(0.9); }
   #player.stage-2 .dragon .horn { opacity: 1; }
   #player.stage-2 .dragon .body {
-    background: radial-gradient(circle at 35% 30%, #a5ffa5, #4caf50 70%);
+    background: radial-gradient(circle at 35% 30%, #c8ffc8, #66bb6a 70%);
   }
-  #player.stage-3 .dragon { transform: scale(1.15); }
-  #player.stage-3 .dragon .wing,
-  #player.stage-3 .dragon .tail,
+  #player.stage-3 .dragon { transform: scale(0.95); }
   #player.stage-3 .dragon .horn { opacity: 1; }
   #player.stage-3 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #a5ffa5, #4caf50 70%);
+  }
+  #player.stage-4 .dragon { transform: scale(1.0); }
+  #player.stage-4 .dragon .horn { opacity: 1; }
+  #player.stage-4 .dragon .tail { opacity: 1; }
+  #player.stage-4 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #a5ffa5, #43a047 70%);
+  }
+  #player.stage-5 .dragon { transform: scale(1.1); }
+  #player.stage-5 .dragon .horn { opacity: 1; }
+  #player.stage-5 .dragon .tail { opacity: 1; }
+  #player.stage-5 .dragon .wing { opacity: 1; }
+  #player.stage-5 .dragon .body {
     background: radial-gradient(circle at 35% 30%, #7dff7d, #2e7d32 70%);
     border-color: #1b5e20;
   }
-  #player.stage-3 .dragon .beard {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
+  #player.stage-6 .dragon { transform: scale(1.18); }
+  #player.stage-6 .dragon .horn { opacity: 1; }
+  #player.stage-6 .dragon .tail { opacity: 1; }
+  #player.stage-6 .dragon .wing { opacity: 1; }
+  #player.stage-6 .dragon .beard { opacity: 1; transform: translateX(-50%) scale(1); }
+  #player.stage-6 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #7dff7d, #1b5e20 70%);
+    border-color: #0d3d0d;
+  }
+  #player.stage-7 .dragon { transform: scale(1.28); }
+  #player.stage-7 .dragon .horn { opacity: 1; filter: drop-shadow(0 0 4px #ffd54f); }
+  #player.stage-7 .dragon .tail { opacity: 1; }
+  #player.stage-7 .dragon .wing { opacity: 1; filter: drop-shadow(0 0 6px #7ee87e); }
+  #player.stage-7 .dragon .beard { opacity: 1; transform: translateX(-50%) scale(1); }
+  #player.stage-7 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #9dff9d, #0d3d0d 70%);
+    border-color: #ffd54f;
+    box-shadow: 0 0 12px rgba(255,213,79,0.7);
+  }
+  #player.stage-8 .dragon { transform: scale(1.38); }
+  #player.stage-8 .dragon .horn { opacity: 1; filter: drop-shadow(0 0 6px #ff5252); }
+  #player.stage-8 .dragon .tail { opacity: 1; filter: drop-shadow(0 0 6px #ff5252); }
+  #player.stage-8 .dragon .wing { opacity: 1; filter: drop-shadow(0 0 8px #ffd54f); }
+  #player.stage-8 .dragon .beard { opacity: 1; transform: translateX(-50%) scale(1); }
+  #player.stage-8 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #ffffff, #ff5252 40%, #7b1fa2 80%);
+    border-color: #ffd54f;
+    box-shadow: 0 0 18px rgba(255,82,82,0.85);
+  }
+  #player.stage-9 .dragon { transform: scale(1.48); }
+  #player.stage-9 .dragon .horn { opacity: 1; filter: drop-shadow(0 0 8px #ff5252); }
+  #player.stage-9 .dragon .tail { opacity: 1; filter: drop-shadow(0 0 8px #ff5252); }
+  #player.stage-9 .dragon .wing { opacity: 1; filter: drop-shadow(0 0 10px #ff9800); }
+  #player.stage-9 .dragon .beard { opacity: 1; transform: translateX(-50%) scale(1); }
+  #player.stage-9 .dragon .fire { opacity: 1; }
+  #player.stage-9 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #fff3b0, #ff5722 45%, #6a1b9a 90%);
+    border-color: #ffeb3b;
+    box-shadow: 0 0 24px rgba(255,87,34,0.95);
+  }
+  #player.stage-10 .dragon { transform: scale(1.6); }
+  #player.stage-10 .dragon .horn { opacity: 1; filter: drop-shadow(0 0 10px #ffeb3b); }
+  #player.stage-10 .dragon .tail { opacity: 1; filter: drop-shadow(0 0 10px #ffeb3b); }
+  #player.stage-10 .dragon .wing { opacity: 1; filter: drop-shadow(0 0 12px #ffeb3b); }
+  #player.stage-10 .dragon .beard { opacity: 1; transform: translateX(-50%) scale(1); }
+  #player.stage-10 .dragon .fire { opacity: 1; }
+  #player.stage-10 .dragon .orb { opacity: 1; }
+  #player.stage-10 .dragon .body {
+    background: radial-gradient(circle at 35% 30%, #ffffff, #ffeb3b 35%, #ff5252 75%, #7b1fa2 100%);
+    border-color: #ffeb3b;
+    box-shadow: 0 0 32px rgba(255,235,59,1), 0 0 50px rgba(255,82,82,0.6);
   }
 
   @keyframes evolvePulse {
@@ -124,6 +241,13 @@
     100% { transform: scale(1); filter: brightness(1); }
   }
   #player.evolving .dragon { animation: evolvePulse 0.5s ease; }
+
+  @keyframes devolvePulse {
+    0% { filter: brightness(1) hue-rotate(0deg); }
+    40% { filter: brightness(0.7) hue-rotate(-60deg) saturate(2); }
+    100% { filter: brightness(1) hue-rotate(0deg); }
+  }
+  #player.devolving .dragon { animation: devolvePulse 0.5s ease; }
 
   @keyframes blink {
     0%, 100% { opacity: 1; }
@@ -142,27 +266,109 @@
   }
 
   .item {
-    position: absolute; width: 20px; height: 20px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #fff, #ab47bc 40%, #6a1b9a 100%);
-    box-shadow: 0 0 10px rgba(186,104,200,0.8);
+    position: absolute; width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
     z-index: 1;
     animation: floatItem 1.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.6));
   }
   @keyframes floatItem {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
 
+  .potion {
+    position: absolute; width: 22px; height: 22px;
+    z-index: 1;
+    animation: floatPotion 1.0s ease-in-out infinite;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .potion .heart {
+    position: absolute;
+    width: 20px; height: 20px;
+    background: radial-gradient(circle at 30% 30%, #ff8a80, #e53935 70%);
+    clip-path: path("M10,3 A4,4 0 0,1 18,3 A4,4 0 0,1 18,11 L10,19 L2,11 A4,4 0 0,1 2,3 A4,4 0 0,1 10,3 Z");
+    filter: drop-shadow(0 0 4px rgba(229,57,53,0.9));
+  }
+  .potion .cross {
+    position: absolute;
+    width: 10px; height: 10px;
+    z-index: 2;
+  }
+  .potion .cross::before,
+  .potion .cross::after {
+    content: "";
+    position: absolute;
+    background: #fff;
+    border-radius: 1px;
+    box-shadow: 0 0 2px rgba(0,0,0,0.4);
+  }
+  .potion .cross::before {
+    left: 50%; top: 0;
+    width: 3px; height: 10px;
+    transform: translateX(-50%);
+  }
+  .potion .cross::after {
+    top: 50%; left: 0;
+    width: 10px; height: 3px;
+    transform: translateY(-50%);
+  }
+  @keyframes floatPotion {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-4px) scale(1.08); }
+  }
+
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 12px;
+    align-items: center; justify-content: center; gap: 10px;
     background: rgba(0,0,0,0.78); text-align: center; padding: 16px;
     z-index: 10;
   }
   #overlay.hidden { display: none; }
-  #overlay .big { font-size: 24px; font-weight: 700; }
-  #overlay .sub { font-size: 13px; color: #bbb; }
+  #overlay .big { font-size: 22px; font-weight: 700; }
+  #overlay .sub { font-size: 12px; color: #bbb; }
+  #overlay #rules {
+    font-size: 12px; color: #ccc; text-align: center;
+    max-width: 420px; line-height: 1.5;
+  }
+  #overlay #controls {
+    font-size: 12px; color: #9bd; text-align: center;
+    max-width: 420px; line-height: 1.4;
+  }
+
+  #overlay.countdown-state #rules,
+  #overlay.countdown-state #controls,
+  #overlay.countdown-state #startBtn,
+  #overlay.countdown-state #ovSub {
+    display: none !important;
+  }
+  #overlay.countdown-state #ovTitle {
+    font-size: 80px;
+    color: #6cf;
+    text-shadow: 0 0 20px rgba(108,204,255,0.6);
+  }
+
+  #overlay.win-state #rules,
+  #overlay.win-state #controls,
+  #overlay.win-state #startBtn,
+  #overlay.win-state #ovSub {
+    display: none !important;
+  }
+
+  #overlay.paused-state #rules,
+  #overlay.paused-state #controls,
+  #overlay.paused-state #startBtn,
+  #overlay.paused-state #ovSub {
+    display: none !important;
+  }
+
+  #overlay.lose-state #rules,
+  #overlay.lose-state #controls,
+  #overlay.lose-state #startBtn,
+  #overlay.lose-state #ovSub {
+    display: none !important;
+  }
 
   button {
     padding: 10px 18px; font-size: 14px; border: 0; border-radius: 6px;
@@ -180,10 +386,10 @@
   .diffBtn.active { border-color: #6cf; background: #34507a; }
   .diffBtn:disabled { opacity: 0.5; cursor: default; }
 
-  #evoBar { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfe; }
-  #evoDots { display: flex; gap: 4px; }
+  #evoBar { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #cfe; flex-wrap: wrap; justify-content: center; }
+  #evoDots { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 480px; }
   .evoDot {
-    width: 14px; height: 14px; border-radius: 50%;
+    width: 12px; height: 12px; border-radius: 50%;
     background: #333; border: 1px solid #555;
     transition: background 0.3s, box-shadow 0.3s;
   }
@@ -223,24 +429,29 @@
   }
   #stage.flash { animation: flash 0.25s ease-out 1; }
 
+  @keyframes healFlash {
+    0% { box-shadow: inset 0 0 0 4px rgba(80,255,120,0.0); }
+    50% { box-shadow: inset 0 0 0 4px rgba(80,255,120,0.95); }
+    100% { box-shadow: inset 0 0 0 4px rgba(80,255,120,0.0); }
+  }
+  #stage.heal-flash { animation: healFlash 0.4s ease-out 1; }
+
   body.reduce-motion #stage.shake,
   body.reduce-motion #stage.flash,
+  body.reduce-motion #stage.heal-flash,
   body.reduce-motion #player.blink,
   body.reduce-motion #player.evolving .dragon,
-  body.reduce-motion .item { animation: none !important; }
-  /* 움직임 감소 시 회전도 끔 */
-  body.reduce-motion #player { transform: none !important; }
+  body.reduce-motion #player.devolving .dragon,
+  body.reduce-motion .item,
+  body.reduce-motion .potion,
+  body.reduce-motion .dragon .fire::before,
+  body.reduce-motion .dragon .fire::after,
+  body.reduce-motion .dragon .orb1,
+  body.reduce-motion .dragon .orb2 { animation: none !important; }
 </style>
 </head>
 <body>
   <h1>드래곤 점프 피하기</h1>
-
-  <div id="rules">
-    규칙: 다가오는 빨간 장애물을 점프로 피해 30초 생존!<br>
-    공중의 보라색 아이템을 먹으면 드래곤이 즉시 진화합니다 (아이템 1개 = 1단계, 총 3단계). 3번 부딪히면 실패.<br>
-    ※ 착한 맛은 장애물이 없습니다 (연습 모드).
-  </div>
-  <div id="controls">조작: Space / ↑ / W / 클릭 = 점프 (공중에서 한 번 더 = 2단 점프) · P 일시정지 · R 다시 시작</div>
 
   <div id="hud">
     <span>상태: <b id="state">대기</b></span>
@@ -250,10 +461,8 @@
   </div>
 
   <div id="evoBar">
-    <span>진화: <b id="evoLabel">아기 드래곤</b></span>
-    <div id="evoDots">
-      <div class="evoDot"></div><div class="evoDot"></div><div class="evoDot"></div>
-    </div>
+    <span>성장: <b id="evoLabel">아기 드래곤</b></span>
+    <div id="evoDots"></div>
   </div>
 
   <div id="difficultyBar">
@@ -275,11 +484,25 @@
         <div class="eye"></div>
         <div class="eye right"></div>
         <div class="beard"></div>
+        <div class="fire"></div>
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
       </div>
     </div>
+
     <div id="overlay">
       <div class="big" id="ovTitle">준비</div>
-      <div class="sub" id="ovSub">Space 또는 시작 버튼으로 시작하세요.</div>
+
+      <div id="rules">
+        규칙: 다가오는 빨간 장애물을 점프로 피해 30초 생존!<br>
+        다양한 <b>음식 아이템</b>을 먹으면 드래곤이 <b>계속 성장</b>합니다 (최대 10단계).
+        장애물에 부딪히면 <b>성장 단계가 1단계 후퇴</b>하고, 목숨 1개 감소 (최대 3).<br>
+        장애물 충돌 후 약 3초 뒤 하트십자가 물약이 나타나 목숨 1개 회복.
+      </div>
+      <div id="controls">
+        조작: <b>Space = 점프 (지면 1단, 공중에서 2단·3단 점프)</b><br>
+        P 일시정지 · R 다시 시작
+      </div>
       <button id="startBtn">시작</button>
     </div>
   </div>
@@ -292,7 +515,7 @@
   <div id="optionBar">
     <label>
       <input type="checkbox" id="motionToggle" />
-      움직임 감소 (흔들림·플래시·깜빡임·회전 끄기)
+      움직임 감소 (흔들림·플래시·깜빡임 끄기)
     </label>
   </div>
 
@@ -310,7 +533,7 @@
     </div>
     <table id="recordTable">
       <thead>
-        <tr><th>#</th><th>결과</th><th>남은시간</th><th>충돌</th><th>진화</th><th>난이도</th></tr>
+        <tr><th>#</th><th>결과</th><th>남은시간</th><th>충돌</th><th>최고성장</th><th>난이도</th></tr>
       </thead>
       <tbody id="recordBody"></tbody>
     </table>
@@ -321,66 +544,59 @@
 (() => {
   "use strict";
 
-  /* =========================================================
-     난이도 설계
-
-     ★ 붉닭 맛 속도를 전체 기본 속도로
-       BASE_OB_SPEED = 0.30
-       세 난이도 모두 OB_SPEED = BASE_OB_SPEED
-
-     ★ 중간 맛은 장애물 2~3개
-       normal.GROUP_SIZES = [2, 3], weights [0.7, 0.3]
-
-     ★ 포물선 점프 (시각적 회전)
-       - 실제 궤적은 중력 물리라 이미 포물선
-       - 캐릭터를 상승 시 뒤로, 하강 시 앞으로 회전시켜
-         "포물선으로 도약하는" 느낌 강화
-       - 착지 시 회전 0으로 복귀
-     ========================================================= */
   const BASE_OB_SPEED = 0.30;
 
   const DIFFICULTIES = {
     easy: {
       name: "착한 맛",
-      OB_SPEED: BASE_OB_SPEED,       // ★ 붉닭 맛과 동일 (장애물은 없음 → 아이템 이동 속도만 영향)
+      OB_SPEED: BASE_OB_SPEED,
       GROUP_DELAY_MIN_MS: 1100,
       GROUP_DELAY_MAX_MS: 1700,
-      GROUP_SIZES: [0],              // 장애물 없음
+      SHORT_MIN_MS: 900,
+      SHORT_MAX_MS: 1100,
+      LONG_MIN_MS: 1500,
+      LONG_MAX_MS: 1900,
+      GROUP_SIZES: [0],
       GROUP_WEIGHTS: [1],
       IN_GROUP_GAP_MS: 0,
       IN_GROUP_STAGGER_X: 0,
       IN_GROUP_JITTER_X: 0,
-      JUMP_V: 15.3, GRAVITY: 1.55,
-      ITEM_MS: 2500,
-      TILT_MAX: 22                   // 최대 회전 각도(도)
+      JUMP_V: 13.3, GRAVITY: 1.15,
+      ITEM_MS: 2500
     },
     normal: {
       name: "중간 맛",
-      OB_SPEED: BASE_OB_SPEED,       // ★ 동일 속도
+      OB_SPEED: BASE_OB_SPEED,
       GROUP_DELAY_MIN_MS: 800,
       GROUP_DELAY_MAX_MS: 1300,
-      GROUP_SIZES: [2, 3],           // ★ 2~3개만
-      GROUP_WEIGHTS: [0.7, 0.3],
+      SHORT_MIN_MS: 600,
+      SHORT_MAX_MS: 850,
+      LONG_MIN_MS: 1300,
+      LONG_MAX_MS: 1700,
+      GROUP_SIZES: [1, 2],
+      GROUP_WEIGHTS: [1.4, 1, 0.7],
       IN_GROUP_GAP_MS: 180,
       IN_GROUP_STAGGER_X: 36,
       IN_GROUP_JITTER_X: 12,
-      JUMP_V: 14.3, GRAVITY: 1.40,
-      ITEM_MS: 3500,
-      TILT_MAX: 24
+      JUMP_V: 13.3, GRAVITY: 1.15,
+      ITEM_MS: 3500
     },
     spicy: {
       name: "붉닭 맛",
-      OB_SPEED: BASE_OB_SPEED,       // ★ 기준 속도
+      OB_SPEED: BASE_OB_SPEED,
       GROUP_DELAY_MIN_MS: 550,
       GROUP_DELAY_MAX_MS: 950,
-      GROUP_SIZES: [1, 2, 3],
-      GROUP_WEIGHTS: [0.5, 0.3, 0.2],
+      SHORT_MIN_MS: 450,
+      SHORT_MAX_MS: 650,
+      LONG_MIN_MS: 950,
+      LONG_MAX_MS: 1250,
+      GROUP_SIZES: [1, 2],
+      GROUP_WEIGHTS: [0.8, 0.5, 0.3],
       IN_GROUP_GAP_MS: 140,
       IN_GROUP_STAGGER_X: 28,
       IN_GROUP_JITTER_X: 16,
       JUMP_V: 13.3, GRAVITY: 1.15,
-      ITEM_MS: 3000,
-      TILT_MAX: 26
+      ITEM_MS: 3000
     }
   };
 
@@ -392,22 +608,55 @@
   const STAGE_W = 480, STAGE_H = 360;
   const PLAYER_W = 40, PLAYER_H = 40;
   const OB_W = 20, OB_H = 20;
-  const ITEM_SIZE = 20;
+  const ITEM_SIZE = 24;
+  const POTION_SIZE = 22;
   const DURATION = 30;
   const MAX_HITS = 3;
+  const MAX_LIVES = MAX_HITS;
   const GROUND_H = 40;
-  const MAX_EVOLUTION = 3;
-  const ITEMS_PER_EVOLUTION = 1;
-  const MAX_JUMPS = 2;
-  const SECOND_JUMP_RATIO = 0.85;
+  const MAX_STAGE = 10;
+
+  const MAX_JUMPS = 3;
+  const JUMP_POWER_RATIOS = [1.0, Math.sqrt(1.5), Math.sqrt(1.75)];
+
   const PLAYER_FIXED_X = 100;
+  const POTION_DELAY_MS = 3000;
+  const COUNTDOWN_START = 3;
+
+  // ★ 다양한 음식 이모지 (과일·채소·고기·패스트푸드·디저트·한식 등)
+  const FOOD_EMOJIS = [
+    // 과일
+    "🍎", "🍊", "🍇", "🍓", "🍒", "🍑", "🥝", "🍍", "🍌", "🍉", "🍋", "🥭",
+    // 채소
+    "🥕", "🍅", "🥦", "🌽", "🥬", "🫑", "🍆", "🥔",
+    // 고기·해산물
+    "🍖", "🍗", "🥩", "🥓", "🍤", "🍣",
+    // 패스트푸드
+    "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯",
+    // 디저트
+    "🍰", "🎂", "🍩", "🍪", "🧁", "🍫", "🍦", "🍮",
+    // 밥·면·한식
+    "🍚", "🍙", "🍜", "🍝", "🍲", "🍛", "🥟"
+  ];
+
+  const STAGE_NAMES = [
+    "아기 드래곤",     // 1
+    "어린 드래곤",     // 2
+    "성인 드래곤",     // 3
+    "숙련 드래곤",     // 4
+    "장로 드래곤",     // 5
+    "고대 드래곤",     // 6
+    "신화 드래곤",     // 7
+    "전설 드래곤",     // 8
+    "화염 드래곤",     // 9
+    "여의주 드래곤"    // 10
+  ];
 
   const $ = (id) => document.getElementById(id);
   const stage = $("stage");
   const playerEl = $("player");
   const overlay = $("overlay");
   const ovTitle = $("ovTitle");
-  const ovSub = $("ovSub");
   const startBtn = $("startBtn");
   const pauseBtn = $("pauseBtn");
   const restartBtn = $("restartBtn");
@@ -423,23 +672,30 @@
   const motionToggle = $("motionToggle");
   const diffBtns = document.querySelectorAll(".diffBtn");
   const evoLabel = $("evoLabel");
-  const evoDots = document.querySelectorAll(".evoDot");
+  const evoDotsContainer = $("evoDots");
 
-  /* ===== 난이도 선택 ===== */
+  for (let i = 0; i < MAX_STAGE; i++) {
+    const d = document.createElement("div");
+    d.className = "evoDot";
+    evoDotsContainer.appendChild(d);
+  }
+  const evoDots = evoDotsContainer.querySelectorAll(".evoDot");
+
   let currentDiffKey = "normal";
   const currentDiff = () => DIFFICULTIES[currentDiffKey];
 
   function setDifficulty(key) {
-    if (state.phase === "playing") return;
+    if (state.phase === "playing" || state.phase === "countdown") return;
     currentDiffKey = key;
     diffBtns.forEach((b) => b.classList.toggle("active", b.dataset.diff === key));
     state.obstacles = [];
     state.items = [];
+    state.potions = [];
+    clearPendingPotionSpawns();
     render();
   }
   diffBtns.forEach((b) => b.addEventListener("click", () => setDifficulty(b.dataset.diff)));
 
-  /* ===== 보존 기록 ===== */
   function loadPersist() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -461,7 +717,6 @@
     totalPlaysEl.textContent = persist.totalPlays;
   }
 
-  /* ===== 움직임 감소 ===== */
   let reduceMotion = localStorage.getItem(MOTION_KEY) === "1";
   function applyMotionSetting() {
     document.body.classList.toggle("reduce-motion", reduceMotion);
@@ -481,20 +736,29 @@
     }, EFFECT_DURATION + 300);
   }
 
+  function playHealEffect() {
+    if (reduceMotion || state.phase !== "playing") return;
+    stage.classList.add("heal-flash");
+    clearTimeout(playHealEffect._t);
+    playHealEffect._t = setTimeout(() => {
+      stage.classList.remove("heal-flash");
+    }, 450);
+  }
+
   motionToggle.addEventListener("change", () => {
     reduceMotion = motionToggle.checked;
     localStorage.setItem(MOTION_KEY, reduceMotion ? "1" : "0");
     applyMotionSetting();
     if (reduceMotion) {
       clearTimeout(playCollisionEffect._t);
+      clearTimeout(playHealEffect._t);
       stage.classList.remove("shake");
       stage.classList.remove("flash");
+      stage.classList.remove("heal-flash");
       playerEl.classList.remove("blink");
-      playerEl.style.transform = "";
     }
   });
 
-  /* ===== 상태 ===== */
   const initialState = () => ({
     phase: "ready",
     timeLeft: DURATION,
@@ -503,19 +767,30 @@
     vy: 0,
     onGround: true,
     jumpsLeft: MAX_JUMPS,
-    tilt: 0,               // ★ 현재 회전 각도(도)
     obstacles: [],
     items: [],
+    potions: [],
+    pendingPotionSpawns: [],
     evolutionStage: 1,
+    maxStageReached: 1,
     itemCount: 0,
     lastFrame: 0,
     loopId: null,
     groupTimerId: null,
-    itemSpawnId: null
+    itemSpawnId: null,
+    countdownTimerId: null,
+    countdownValue: 0,
+    spawnMode: "short",
+    spawnModeLeft: 2
   });
   let state = initialState();
 
-  /* ===== 기록 ===== */
+  function clearPendingPotionSpawns() {
+    if (!state.pendingPotionSpawns) return;
+    state.pendingPotionSpawns.forEach((tid) => clearTimeout(tid));
+    state.pendingPotionSpawns = [];
+  }
+
   const records = [];
   function recordRun(result, cause) {
     records.push({
@@ -523,7 +798,7 @@
       result,
       timeLeft: +state.timeLeft.toFixed(2),
       hits: state.hits,
-      evo: state.evolutionStage,
+      evo: state.maxStageReached,
       cause,
       difficulty: currentDiff().name
     });
@@ -550,7 +825,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML =
         `<td>${r.run}</td>` +
-        `<td>${r.result === "win" ? "성공" : "실패"}</td>` +
+        `<td>${r.result === "win" ? "성공!!" : "실패!"}</td>` +
         `<td>${r.timeLeft.toFixed(1)}</td>` +
         `<td>${r.hits}</td>` +
         `<td>${r.evo}단계</td>` +
@@ -566,7 +841,7 @@
   function clearRecords() { records.length = 0; renderRecords(); }
   function exportCSV() {
     if (records.length === 0) { alert("기록이 없습니다."); return; }
-    const header = "run,result,timeLeft,hits,evolution,cause,difficulty\n";
+    const header = "run,result,timeLeft,hits,maxEvolution,cause,difficulty\n";
     const rows = records.map((r) =>
       [r.run, r.result, r.timeLeft, r.hits, r.evo, r.cause, r.difficulty].join(",")
     ).join("\n");
@@ -578,14 +853,14 @@
     URL.revokeObjectURL(a.href);
   }
 
-  /* ===== 진화 UI ===== */
   function updateEvolutionUI() {
     const s = state.evolutionStage;
-    playerEl.classList.remove("stage-1", "stage-2", "stage-3");
+    for (let i = 1; i <= MAX_STAGE; i++) {
+      playerEl.classList.remove(`stage-${i}`);
+    }
     playerEl.classList.add(`stage-${s}`);
 
-    const labels = ["아기 드래곤", "어린 드래곤", "성인 드래곤"];
-    evoLabel.textContent = labels[s - 1];
+    evoLabel.textContent = STAGE_NAMES[s - 1] || `단계 ${s}`;
 
     evoDots.forEach((d, i) => {
       d.classList.toggle("filled", i < s);
@@ -593,8 +868,11 @@
   }
 
   function tryEvolve() {
-    if (state.evolutionStage >= MAX_EVOLUTION) return;
+    if (state.evolutionStage >= MAX_STAGE) return;
     state.evolutionStage += 1;
+    if (state.evolutionStage > state.maxStageReached) {
+      state.maxStageReached = state.evolutionStage;
+    }
     updateEvolutionUI();
     if (!reduceMotion) {
       playerEl.classList.add("evolving");
@@ -602,23 +880,26 @@
     }
   }
 
-  /* ===== 렌더 ===== */
+  function tryDevolve() {
+    if (state.evolutionStage <= 1) return;
+    state.evolutionStage -= 1;
+    updateEvolutionUI();
+    if (!reduceMotion) {
+      playerEl.classList.add("devolving");
+      setTimeout(() => playerEl.classList.remove("devolving"), 600);
+    }
+  }
+
   function render() {
     playerEl.style.left = PLAYER_FIXED_X + "px";
     playerEl.style.bottom = (GROUND_H + state.playerY) + "px";
-    // ★ 포물선 느낌: 상승 시 뒤로, 하강 시 앞으로 회전
-    if (!reduceMotion) {
-      playerEl.style.transform = `rotate(${state.tilt}deg)`;
-    } else {
-      playerEl.style.transform = "";
-    }
 
     stateEl.textContent = {
-      ready: "대기", playing: "진행 중", paused: "일시정지",
-      win: "성공", lose: "실패"
+      ready: "대기", countdown: "카운트다운", playing: "진행 중",
+      paused: "일시정지", win: "성공!!", lose: "실패!"
     }[state.phase];
     timeEl.textContent = state.timeLeft.toFixed(1);
-    livesEl.textContent = Math.max(0, MAX_HITS - state.hits);
+    livesEl.textContent = Math.max(0, MAX_LIVES - state.hits);
     diffView.textContent = currentDiff().name;
 
     stage.querySelectorAll(".obstacle").forEach((el) => el.remove());
@@ -635,46 +916,64 @@
       el.className = "item";
       el.style.left = it.x + "px";
       el.style.bottom = (GROUND_H + it.y) + "px";
+      el.textContent = it.emoji || "🍎";
+      stage.appendChild(el);
+    }
+    stage.querySelectorAll(".potion").forEach((el) => el.remove());
+    for (const p of state.potions) {
+      const el = document.createElement("div");
+      el.className = "potion";
+      el.style.left = p.x + "px";
+      el.style.bottom = (GROUND_H + p.y) + "px";
+      el.innerHTML = `<div class="heart"></div><div class="cross"></div>`;
       stage.appendChild(el);
     }
 
-    const locked = state.phase === "playing";
+    const locked = state.phase === "playing" || state.phase === "countdown";
     diffBtns.forEach((b) => (b.disabled = locked));
+
+    overlay.classList.remove("win-state", "countdown-state", "paused-state", "lose-state");
 
     if (state.phase === "ready") {
       overlay.classList.remove("hidden");
       ovTitle.textContent = "준비";
-      ovSub.textContent = "난이도를 고르고 Space 또는 시작 버튼을 누르세요.";
-      startBtn.disabled = false;
-      startBtn.textContent = "시작";
+      startBtn.style.display = "inline-block";
       pauseBtn.disabled = true;
       pauseBtn.textContent = "일시정지 (P)";
       restartBtn.disabled = true;
+    } else if (state.phase === "countdown") {
+      overlay.classList.remove("hidden");
+      overlay.classList.add("countdown-state");
+      ovTitle.textContent = String(state.countdownValue);
+      startBtn.style.display = "none";
+      pauseBtn.disabled = true;
+      restartBtn.disabled = true;
     } else if (state.phase === "playing") {
       overlay.classList.add("hidden");
+      startBtn.style.display = "none";
       pauseBtn.disabled = false;
       pauseBtn.textContent = "일시정지 (P)";
       restartBtn.disabled = true;
     } else if (state.phase === "paused") {
       overlay.classList.remove("hidden");
-      ovTitle.textContent = "일시정지";
-      ovSub.textContent = "P 또는 아래 버튼으로 재개하세요.";
-      startBtn.disabled = true;
+      overlay.classList.add("paused-state");
+      ovTitle.textContent = "~일시정지~";
+      startBtn.style.display = "none";
       pauseBtn.disabled = false;
       pauseBtn.textContent = "재개 (P)";
       restartBtn.disabled = false;
     } else if (state.phase === "win") {
       overlay.classList.remove("hidden");
+      overlay.classList.add("win-state");
       ovTitle.textContent = "성공!";
-      ovSub.textContent = `30초 생존 성공! 최종 진화: ${["아기", "어린", "성인"][state.evolutionStage - 1]} 드래곤`;
-      startBtn.disabled = true;
+      startBtn.style.display = "none";
       pauseBtn.disabled = true;
       restartBtn.disabled = false;
     } else if (state.phase === "lose") {
       overlay.classList.remove("hidden");
-      ovTitle.textContent = "실패";
-      ovSub.textContent = "장애물에 3번 부딪혔습니다. R 또는 버튼으로 다시 시작.";
-      startBtn.disabled = true;
+      overlay.classList.add("lose-state");
+      ovTitle.textContent = "실패!!";
+      startBtn.style.display = "none";
       pauseBtn.disabled = true;
       restartBtn.disabled = false;
     }
@@ -682,11 +981,12 @@
     updateEvolutionUI();
   }
 
-  /* ===== 타이머 ===== */
   function clearTimers() {
     if (state.loopId) { cancelAnimationFrame(state.loopId); state.loopId = null; }
     if (state.groupTimerId) { clearTimeout(state.groupTimerId); state.groupTimerId = null; }
     if (state.itemSpawnId) { clearInterval(state.itemSpawnId); state.itemSpawnId = null; }
+    if (state.countdownTimerId) { clearInterval(state.countdownTimerId); state.countdownTimerId = null; }
+    clearPendingPotionSpawns();
   }
 
   function startTimers() {
@@ -694,17 +994,33 @@
     state.lastFrame = performance.now();
     state.loopId = requestAnimationFrame(loop);
 
+    state.spawnMode = "short";
+    state.spawnModeLeft = 2;
+
     state.groupTimerId = setTimeout(scheduleNextGroup, 500);
     state.itemSpawnId = setInterval(spawnItem, currentDiff().ITEM_MS);
   }
 
-  /* ===== 시작/일시정지/재시작/종료 ===== */
-  function startGame() {
+  function startCountdown() {
     if (state.phase !== "ready") return;
-    state.phase = "playing";
-    state.lastFrame = performance.now();
-    startTimers();
+    clearTimers();
+    state.phase = "countdown";
+    state.countdownValue = COUNTDOWN_START;
     render();
+
+    state.countdownTimerId = setInterval(() => {
+      state.countdownValue -= 1;
+      if (state.countdownValue <= 0) {
+        clearInterval(state.countdownTimerId);
+        state.countdownTimerId = null;
+        state.phase = "playing";
+        state.lastFrame = performance.now();
+        startTimers();
+        render();
+      } else {
+        render();
+      }
+    }, 1000);
   }
 
   function togglePause() {
@@ -749,20 +1065,30 @@
     render();
     console.log(JSON.stringify({
       result, timeLeft: +state.timeLeft.toFixed(2), hits: state.hits,
-      difficulty: currentDiffKey, evolution: state.evolutionStage, ts: Date.now()
+      difficulty: currentDiffKey, maxStage: state.maxStageReached, ts: Date.now()
     }));
   }
 
-  /* =========================================================
-     장애물 그룹 스폰
-     ========================================================= */
   function scheduleNextGroup() {
     if (state.phase !== "playing") return;
     const diff = currentDiff();
     spawnGroup();
 
-    const delay = diff.GROUP_DELAY_MIN_MS +
-      Math.random() * (diff.GROUP_DELAY_MAX_MS - diff.GROUP_DELAY_MIN_MS);
+    let delay;
+    if (state.spawnMode === "short") {
+      delay = diff.SHORT_MIN_MS +
+        Math.random() * (diff.SHORT_MAX_MS - diff.SHORT_MIN_MS);
+    } else {
+      delay = diff.LONG_MIN_MS +
+        Math.random() * (diff.LONG_MAX_MS - diff.LONG_MIN_MS);
+    }
+
+    state.spawnModeLeft -= 1;
+    if (state.spawnModeLeft <= 0) {
+      state.spawnMode = (state.spawnMode === "short") ? "long" : "short";
+      state.spawnModeLeft = 2 + Math.floor(Math.random() * 2);
+    }
+
     state.groupTimerId = setTimeout(scheduleNextGroup, delay);
   }
 
@@ -779,7 +1105,7 @@
   function spawnGroup() {
     const diff = currentDiff();
     const size = pickGroupSize(diff);
-    if (size <= 0) return; // 착한 맛
+    if (size <= 0) return;
 
     for (let i = 0; i < size; i++) {
       const jitter = diff.IN_GROUP_JITTER_X > 0
@@ -794,14 +1120,59 @@
     }
   }
 
+  /* ★ 아이템 스폰: 다양한 음식 이모지 + X·Y 랜덤 */
   function spawnItem() {
+    const diff = currentDiff();
+    const totalRatio = JUMP_POWER_RATIOS.reduce((acc, r) => acc + r * r, 0);
+    const maxJumpHeight = (diff.JUMP_V * diff.JUMP_V) / (2 * diff.GRAVITY) * totalRatio - PLAYER_H;
     const minY = 45;
-    const maxY = 110;
+    const maxY = Math.max(
+      minY + 40,
+      Math.min(maxJumpHeight, STAGE_H - GROUND_H - ITEM_SIZE - 10)
+    );
     const y = minY + Math.random() * (maxY - minY);
-    state.items.push({ x: STAGE_W, y });
+    const x = STAGE_W + Math.random() * 80;
+    const emoji = FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)];
+    state.items.push({ x, y, emoji });
   }
 
-  /* ===== 게임 루프 ===== */
+  function spawnPotionNow() {
+    if (state.phase !== "playing") return;
+    const minY = 40;
+    const maxY = 120;
+    const y = minY + Math.random() * (maxY - minY);
+    const x = STAGE_W + Math.random() * 80;
+    state.potions.push({ x, y });
+  }
+
+  function schedulePotionSpawn() {
+    const tid = setTimeout(() => {
+      if (state.phase !== "playing") return;
+      spawnPotionNow();
+      const idx = state.pendingPotionSpawns.indexOf(tid);
+      if (idx !== -1) state.pendingPotionSpawns.splice(idx, 1);
+    }, POTION_DELAY_MS);
+    state.pendingPotionSpawns.push(tid);
+  }
+
+  function jump() {
+    if (state.phase !== "playing") return;
+    if (state.jumpsLeft <= 0) return;
+
+    const diff = currentDiff();
+    const idx = MAX_JUMPS - state.jumpsLeft;
+    const ratio = JUMP_POWER_RATIOS[idx] || 0.5;
+
+    if (state.vy > 0) {
+      state.vy += diff.JUMP_V * ratio;
+    } else {
+      state.vy = diff.JUMP_V * ratio;
+    }
+
+    state.onGround = false;
+    state.jumpsLeft -= 1;
+  }
+
   function loop(now) {
     if (state.phase !== "playing") return;
     const dt = Math.min(32, now - state.lastFrame) / 16.67;
@@ -811,37 +1182,27 @@
 
     state.timeLeft = Math.max(0, state.timeLeft - (1 / 60) * dt);
 
-    // 점프 물리 + 회전(포물선 느낌)
     if (!state.onGround || state.vy !== 0) {
       state.vy -= diff.GRAVITY * dt;
       state.playerY += state.vy * dt;
-
-      // 상승 중(vy > 0): 뒤로 기울기(-)
-      // 하강 중(vy < 0): 앞으로 숙이기(+)
-      const targetTilt = -Math.sign(state.vy) * diff.TILT_MAX;
-      state.tilt += (targetTilt - state.tilt) * 0.25;
 
       if (state.playerY <= 0) {
         state.playerY = 0;
         state.vy = 0;
         state.onGround = true;
         state.jumpsLeft = MAX_JUMPS;
-        state.tilt = 0;
       }
-    } else {
-      // 지면에선 회전 복귀
-      state.tilt += (0 - state.tilt) * 0.25;
     }
 
-    // 장애물 이동
     for (const ob of state.obstacles) ob.x -= diff.OB_SPEED * dt * 16.67;
     state.obstacles = state.obstacles.filter((ob) => ob.x + OB_W > 0);
 
-    // 아이템 이동
     for (const it of state.items) it.x -= diff.OB_SPEED * 0.7 * dt * 16.67;
     state.items = state.items.filter((it) => it.x + ITEM_SIZE > 0);
 
-    // 충돌 판정
+    for (const p of state.potions) p.x -= diff.OB_SPEED * 0.7 * dt * 16.67;
+    state.potions = state.potions.filter((p) => p.x + POTION_SIZE > 0);
+
     const plLeft = PLAYER_FIXED_X;
     const plRight = PLAYER_FIXED_X + PLAYER_W;
     const plBottom = state.playerY;
@@ -856,10 +1217,14 @@
       state.obstacles = state.obstacles.filter((ob) => !isHit(ob));
       state.hits += hitCount;
       playCollisionEffect();
+
+      for (let i = 0; i < hitCount; i++) tryDevolve();
+
       if (state.hits >= MAX_HITS) { endGame("lose"); return; }
+
+      for (let i = 0; i < hitCount; i++) schedulePotionSpawn();
     }
 
-    // 아이템 획득 판정
     const grabbed = state.items.filter((it) =>
       plLeft < it.x + ITEM_SIZE && plRight > it.x &&
       plBottom < it.y + ITEM_SIZE && plTop > it.y
@@ -872,44 +1237,36 @@
       }
     }
 
+    const drank = state.potions.filter((p) =>
+      plLeft < p.x + POTION_SIZE && plRight > p.x &&
+      plBottom < p.y + POTION_SIZE && plTop > p.y
+    );
+    if (drank.length > 0) {
+      state.potions = state.potions.filter((p) => !drank.includes(p));
+      const before = state.hits;
+      state.hits = Math.max(0, state.hits - drank.length);
+      if (state.hits < before) playHealEffect();
+    }
+
     if (state.timeLeft <= 0) { endGame("win"); return; }
     render();
     state.loopId = requestAnimationFrame(loop);
   }
 
-  /* ===== 입력 ===== */
-  function jump() {
-    if (state.phase !== "playing") return;
-    if (state.jumpsLeft <= 0) return;
-
-    const diff = currentDiff();
-    if (state.jumpsLeft === MAX_JUMPS) {
-      state.vy = diff.JUMP_V;
-    } else {
-      state.vy = diff.JUMP_V * SECOND_JUMP_RATIO;
-    }
-    state.onGround = false;
-    state.jumpsLeft -= 1;
-  }
-
   document.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
-    if (k === "arrowup" || k === "w" || e.code === "Space") {
+    if (e.code === "Space") {
       e.preventDefault();
-      if (state.phase === "ready") startGame();
-      else if (state.phase === "playing" && !e.repeat) jump();
+      if (state.phase === "ready") { startCountdown(); return; }
+      if (state.phase === "playing" && !e.repeat) {
+        jump();
+      }
     } else if (k === "p") {
       e.preventDefault();
       if (!e.repeat) togglePause();
     } else if (k === "r") {
       if (!e.repeat) restart();
     }
-  });
-
-  stage.addEventListener("pointerdown", () => {
-    if (state.phase === "ready") { startGame(); return; }
-    if (state.phase !== "playing") return;
-    jump();
   });
 
   document.addEventListener("visibilitychange", () => {
@@ -919,7 +1276,7 @@
     if (state.phase === "playing") togglePause();
   });
 
-  startBtn.addEventListener("click", startGame);
+  startBtn.addEventListener("click", startCountdown);
   pauseBtn.addEventListener("click", togglePause);
   restartBtn.addEventListener("click", restart);
   $("csvBtn").addEventListener("click", exportCSV);
@@ -930,7 +1287,6 @@
     renderPersist();
   });
 
-  /* ===== 초기 ===== */
   applyMotionSetting();
   setDifficulty("normal");
   render();
